@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概述反病毒技术综述 第一代反病毒技术 单纯的病毒特征代码分析，清除染毒文件中的病毒  第二代反病毒技术 静态广谱特征扫描技术，可以检测变形病毒，误报率高">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_反病毒技术简介">
+<meta property="og:url" content="https://wsw8.online/2021/05/20/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="概述反病毒技术综述 第一代反病毒技术 单纯的病毒特征代码分析，清除染毒文件中的病毒  第二代反病毒技术 静态广谱特征扫描技术，可以检测变形病毒，误报率高">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/image-20210521085111002.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/image-20210521091543540.png">
+<meta property="article:published_time" content="2021-05-20T13:56:28.000Z">
+<meta property="article:modified_time" content="2021-05-21T01:18:09.819Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/image-20210521085111002.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/20/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_反病毒技术简介 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/20/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_反病毒技术简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-20 21:56:28" itemprop="dateCreated datePublished" datetime="2021-05-20T21:56:28+08:00">2021-05-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-21 09:18:09" itemprop="dateModified" datetime="2021-05-21T09:18:09+08:00">2021-05-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="反病毒技术综述"><a href="#反病毒技术综述" class="headerlink" title="反病毒技术综述"></a>反病毒技术综述</h3><ol>
+<li><p>第一代反病毒技术</p>
+<p>单纯的病毒特征代码分析，清除染毒文件中的病毒</p>
+</li>
+<li><p>第二代反病毒技术</p>
+<p>静态广谱特征扫描技术，可以检测变形病毒，误报率高</p>
+<span id="more"></span>
+</li>
+<li><p>第三代反病毒技术</p>
+<p>静态扫描技术和动态仿真跟踪技术结合，查找病毒和清除病毒二合一</p>
+</li>
+<li><p>第四代反病毒技术</p>
+<p>基于病毒家族体系的命名规则、基于多位校验和扫描机理、启发式智能代码分析模块、动态数据还原模块、内存解毒模块、自身免疫模块等先进的解毒技术，较好的解决了以前防毒技术顾此失彼、此消彼长的状态，能够较好地完成查毒、解毒的任务</p>
+</li>
+</ol>
+<h3 id="计算机病毒防治技术的划分"><a href="#计算机病毒防治技术的划分" class="headerlink" title="计算机病毒防治技术的划分"></a>计算机病毒防治技术的划分</h3><ol>
+<li>病毒预防，防止病毒进入内存或阻止病毒对磁盘的操作</li>
+<li>病毒检测，计算机病毒的判定</li>
+<li>病毒消除，计算机病毒感染的逆过程，恢复被感染程序原有的结构信息</li>
+<li>病毒免疫，可能并不存在通用的病毒免疫方法</li>
+</ol>
+<h3 id="病毒防治技术从被动到主动"><a href="#病毒防治技术从被动到主动" class="headerlink" title="病毒防治技术从被动到主动"></a>病毒防治技术从被动到主动</h3><ol>
+<li>传统的反病毒技术基于被动式的防御理念，这种理念最大的缺点在于将防治病毒的基础建立在病毒侵入操作系统或网络系统以后，作为上层应用软件的反病毒产品，才能借助于操作系统或网络系统所提供的功能来被动地防治病毒</li>
+<li>主动内核（Active K）技术，是在操作系统和网络的内核中嵌入反病毒功能，使反病毒成为系统本身的底层模块，实现各种反毒模块与操作系统和网络无缝连接，而不是一个系统外部的应用软件。主动内核技术能够实时监控整个系统的运行，并在病毒突破计算机系统软、硬件的瞬间发生作用</li>
+</ol>
+<h3 id="病毒防范的概念"><a href="#病毒防范的概念" class="headerlink" title="病毒防范的概念"></a>病毒防范的概念</h3><ol>
+<li>计算机病毒防范，是指通过建立合理的计算机病毒防范体系和制度，及时发现计算机病毒侵入，并采取有效的手段阻止计算机病毒的传播和破坏，恢复受影响的计算机系统和数据</li>
+<li>计算机病毒的防范，就是要在病毒执行之前进行阻断，需要监视、跟踪系统内类似的操作，提供对系统的保护，最大限度地避免各种计算机病毒的传染破坏，往往需要基于全系统的内核级行为监控</li>
+</ol>
+<h3 id="病毒预防措施"><a href="#病毒预防措施" class="headerlink" title="病毒预防措施"></a>病毒预防措施</h3><ol>
+<li><p>勤备份</p>
+<p>及时备份，即使计算机中重要数据遭到计算机病毒的破坏，也可以最大限度的恢复，减少可能的损失。病毒造成的危害有些是不可逆的，因此只能通过备份的方式予以恢复。</p>
+</li>
+<li><p>严防守</p>
+<p>所谓严防守，选择公认最好的反病毒软件、及时安装补丁、在安装新软件前先检测是否含有计算机病毒、尽量不使用软盘，优盘，移动硬盘引导启动等</p>
+</li>
+</ol>
+<h3 id="计算机检测技术分类"><a href="#计算机检测技术分类" class="headerlink" title="计算机检测技术分类"></a>计算机检测技术分类</h3><ol>
+<li><p>手工检测</p>
+<p>利用Debug、PCTools、SysInfo、WinHex等工具软件进行病毒的检测</p>
+<p>这种方法比较复杂，费时费力，如IceSword </p>
+<p>优点：可以剖析病毒、可以检测一些自动检测工具不能识别的新病毒</p>
+</li>
+<li><p>自动检测</p>
+<p>利用一些专业诊断软件来判断引导扇区、磁盘文件是否有毒的方法</p>
+<p>自动检测比较简单，一般用户都可以进行，但需要较好的诊断软件</p>
+<p>优点：可方便地检测大量的病毒，自动检测工具的发展总是滞后于病毒的发展</p>
+</li>
+</ol>
+<h2 id="常见病毒诊断方法及原理"><a href="#常见病毒诊断方法及原理" class="headerlink" title="常见病毒诊断方法及原理"></a>常见病毒诊断方法及原理</h2><h3 id="比较诊断法"><a href="#比较诊断法" class="headerlink" title="比较诊断法"></a>比较诊断法</h3><p>原理：用原始的正常备份与被检测的内容(引导扇区或被检测的文件)进行比较</p>
+<p>常见比较法：长度比较法、内容比较法、内存比较法、中断比较法</p>
+<p>优点：比较法不需要专用的反病毒软件，且可以检测未知病毒</p>
+<p>缺点：</p>
+<ol>
+<li>该方法依赖与未染病毒时的原始系统的备份</li>
+</ol>
+<ul>
+<li>且无法知道病毒的种类名称</li>
+<li>易于误报：由于某些病毒并不会导致长度变化，则使用长度比较法会发生漏报，而一些非病毒的操作同样可能改变文件或引导区的长度、内容等</li>
+</ul>
+<h3 id="校验和诊断法"><a href="#校验和诊断法" class="headerlink" title="校验和诊断法"></a>校验和诊断法</h3><p>原理：根据正常文件的信息(如文件名称、大小、时间、日期及内容)，计算其校验和（checksum），计算新的校验和与原来保存的校验和是否一致（校验和被广泛应用在通信领域，用来保证数据的完整性和准确性）</p>
+<p>三种方式：</p>
+<ol>
+<li>对被查的对象文件计算其正常状态的校验和，将校验和值写入被查文件中或检测工具中，而后进行比较</li>
+<li>在应用程序中，放入校验和法自我检查功能，实现应用程序的自检测</li>
+<li>将校验和检查程序常驻内存，每当应用程序开始运行时，自动比较检查应用程序内部或其他文件中预先保存的校验和</li>
+</ol>
+<p>优点：校验和法既能发现已知病毒，也能发现未知病毒</p>
+<p>缺点：不能识别病毒种类与名称，对某些对文件信息影响不大的病毒效果较差，如链式病毒；同比较法一样，病毒感染并不是文件改变的唯一原因，所以此法会产生误报</p>
+<h3 id="扫描诊断法"><a href="#扫描诊断法" class="headerlink" title="扫描诊断法"></a>扫描诊断法</h3><p>原理：扫描法是用每一种病毒体含有的特定病毒码(Virus Pattern)对被检测的对象进行扫描。如果在被检测对象内部发现了某一种特定病毒码，就表明发现了该病毒码所代表的病毒</p>
+<p>两种方式：</p>
+<ol>
+<li>特征代码扫描法</li>
+<li>特征字扫描法</li>
+</ol>
+<p>特定病毒码：当杀毒软件公司收集到新病毒中，就会从病毒程序中截取一小段独一无二且足以标记该病毒的二进制程序码（就好比犯人的指纹）</p>
+<p>扫描法软件包括两部分：</p>
+<ol>
+<li>病毒代码库，库中特征码数量决定了扫描程序的识别能力</li>
+<li>扫描程序</li>
+</ol>
+<p>扫描法是当前最普遍的病毒检测方法</p>
+<p>特征码选择原则：</p>
+<ol>
+<li>具有代表性：小的病毒一百多字节，长的10KB</li>
+<li>不应包含数据区，数据区是可变的</li>
+<li>特征码的长度：过长带来扫码时间和空间的开销过大，过短则不易具有代表性（两个相互矛盾的目标）</li>
+<li>具有区分性：能区别该病毒和其他病毒，更重要的是要能区分病毒和正常程序，避免误报！</li>
+</ol>
+<p>优点：</p>
+<p>使用方便；特征码选择好则误报率低、选择不好则误报率高</p>
+<p>不用专门查毒软件；可识别病毒名称和类别；可做扫毒处理</p>
+<p>缺点：</p>
+<p>特征码的生成难度很大；扫描需要开销；需要不断更新病毒特征码库</p>
+<p>不易识别多态变形病毒、不能检测未知病毒等</p>
+<h3 id="行为监测诊断法"><a href="#行为监测诊断法" class="headerlink" title="行为监测诊断法"></a>行为监测诊断法</h3><p>原理：利用病毒的特有行为特性监测病毒的方法，称为行为监测法（人工智能）</p>
+<p>典型行为特征：</p>
+<ol>
+<li>盗用截流系统中断</li>
+<li>导致内存相关信息变化（如内存总量）</li>
+<li>对可执行文件进行写入动作</li>
+<li>写引导扇区或格式化磁盘的可以操作</li>
+<li>搜索API函数地址</li>
+</ol>
+<p>优点：既能发现已知病毒，也能发现未知病毒</p>
+<p>缺点：误报，不能识别病毒名称和种类，需要病毒运行以后才能进行分析</p>
+<h3 id="感染实验诊断法"><a href="#感染实验诊断法" class="headerlink" title="感染实验诊断法"></a>感染实验诊断法</h3><p>原理：利用病毒最基本的特征——感染特征，所有病毒都会进行感染，如果不感染，就不称其为病毒</p>
+<p>方法：将正常的文件放入异常的系统中去运行，看这些正常文件是否会被感染，如果被感染，则文件内容会发生变化（通过校验和等检测），则断言系统中存在病毒</p>
+<p>优点：可以发现未知病毒</p>
+<p>缺点：实验开销大，实用性较差</p>
+<h3 id="软件模拟诊断法"><a href="#软件模拟诊断法" class="headerlink" title="软件模拟诊断法"></a>软件模拟诊断法</h3><p>多态病毒：多态病毒每次感染都变化其病毒代码，对付这种病毒，特征码扫描法失效，我们把使用通常特征码扫描法无法检测（或几乎很难检测）的病毒称之为多态病毒</p>
+<p>多态病毒变换方式：</p>
+<ol>
+<li>采用等价代码对原有代码替换</li>
+<li>改变与执行次序无关的指令的次序</li>
+<li>增加许多垃圾指令</li>
+<li>对原有计算机病毒代码进行加密等</li>
+</ol>
+<p>特征：多态病毒的病毒代码实施密码化，且每次所使用密钥不同，比较多个感染同一病毒的多个文件中的病毒代码，也难以找到相同的可以作为特征码的稳定代码，多态病毒的多态性通常表现在病毒代码和病毒行为的不固定性。但是，每一个多态病毒在执行时都需要还原，如先执行一段解密代码进行解密，再执行解密后的病毒代码。</p>
+<p>原理：软件模拟诊断法就是针对解密后的病毒代码所提出来的一种诊断法，软件模拟（Software Emulation）诊断法又称为解密引擎、虚拟机执行技术或软件仿真技术，它的本质就是一种软件运行时的分析器</p>
+<p>方法：它通过在一个模拟的虚拟环境下运行计算机病毒，等待计算机病毒自身进行解密完成后，再对解密后的病毒代码实施特征码的识别，识别病毒种类后再进行有相关的清除和查杀工作。</p>
+<h3 id="分析诊断法"><a href="#分析诊断法" class="headerlink" title="分析诊断法"></a>分析诊断法</h3><p>目的：</p>
+<ol>
+<li>确认被观察的引导扇区和程序中是否含有病毒 </li>
+<li>确认病毒的类型和种类，判定其是否是一种新病毒 </li>
+<li>搞清楚病毒体的大致结构，提取特征识别用的字符串或特征字，并增添到病毒代码库供病毒扫描和识别程序使</li>
+<li>详细分析病毒代码，为制定相应的反病毒措施制定方案</li>
+</ol>
+<h2 id="启发式代码扫描技术"><a href="#启发式代码扫描技术" class="headerlink" title="启发式代码扫描技术"></a>启发式代码扫描技术</h2><p>原理：启发式代码扫描技术基于给定的判断规则和定义的扫描技术，若发现被扫描程序中存在可疑的程序功能指令，则作出存在病毒的预警或判断。</p>
+<p>病毒和正常程序区别：</p>
+<ol>
+<li>正常程序在最初的指令是检查命令行输入有无参数项、清屏和保存原来屏幕显示等</li>
+<li>病毒程序则从来不会这样做，它通常最初的指令是直接写盘操作、跳转、解码指令，或搜索某路径下的可执行程序等相关操作指令序列）</li>
+</ol>
+<p>是一种概率方法：</p>
+<ol>
+<li>可疑程序功能权值定义</li>
+<li>可疑程序报警标准</li>
+<li>可疑功能标志</li>
+</ol>
+<p>缺点：误报</p>
+<p>和传统扫描结合：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/image-20210521085111002.png" alt="image-20210521085111002"></p>
+<h2 id="虚拟机查毒技术"><a href="#虚拟机查毒技术" class="headerlink" title="虚拟机查毒技术"></a>虚拟机查毒技术</h2><p>全虚拟化技术：虚拟的操作系统，与底层的硬件完全隔离，完全由中间的Hypervisor层（VMM）完成指令转换和资源映射，典型的代表有Vmware，WorkStation，Microsoft Virtual Server等</p>
+<p>半虚拟化技术：需要在虚拟机的操作系统中加入特定的虚拟化指令（Hypercalls），通过这些加入的指令来调用硬件资源，免除了一部分Hypervisor层转换指令的开销。典型的代表有Xen等。</p>
+<p>原理：虚拟机查毒实际上是自动跟踪病毒入口的解密代码，当其将加密的病毒体按其解密算法进行解密后，就可以得到解密后的病毒明文</p>
+<p>两种方法：</p>
+<ol>
+<li>单步和断点跟踪法（易于发现）</li>
+<li>虚拟执行法（不被发现）</li>
+</ol>
+<p>设计方案：</p>
+<ol>
+<li><p>自含代码虚拟机(SCCE)：SCCE工作起来象一个真正的CPU，每一条取自内存的指令，都由SCCE解码，并被传送到相应的模拟这条指令的例程</p>
+</li>
+<li><p>缓冲代码虚拟机(BCE)：BCE可以看做是SCCE的缩略版，主要进行了特殊指令和非特殊指令的区分，一条指令从内存中取得后，并和一个特殊指令表相比较，如果不是特殊指令，会被导入到一个可以通用地模拟所有非特殊指令的例程，而一小部分的特殊指令，则在特定的例程中进行模拟</p>
+</li>
+<li><p>有限代码虚拟机(LCE)：LCE实际上并非一个虚拟机，因为它并不真正的模拟指令，它只简单地跟踪一段代码的寄存器内容，提供一个小的被改动的内存地址表，或是调用过的中断之类的东西</p>
+</li>
+</ol>
+<p>反虚拟执行技术：</p>
+<ol>
+<li><p>插入特殊指令技术</p>
+<blockquote>
+<p>原理：虚拟机是模拟CPU的执行，并不是真正的CPU，所以不可以能对整个Intel的指令集进行支持，遇到不认识的指令就会停止工作<br>方法：病毒插入特殊指令（如3DNoW），这些指令对病毒本身没有影响，但会干扰虚拟机的工作<br>应对：不需要针对每个特殊指令写专门的模拟函数，只需要构建特殊指令的指令长度表，当EIP指向特殊指令时，就跳过特殊指令长度，或者发现这些特殊指令时，交由CPU去真正执行</p>
+</blockquote>
+</li>
+<li><p>结构化异常处理技术</p>
+<blockquote>
+<p>原理：虚拟机仅仅模拟了CPU的工作过程，而对于异常处理等系统机制没有进行处理，虚拟机会在遇到非法指令、进入异常处理函数前停止工作<br>方法：将解密代码置于自己的异常处理函数，并故意引发异常处理函数<br>应对：为虚拟机赋予发现和记录异常的功能，并在引发异常时将控制转向异常处理函数</p>
+</blockquote>
+</li>
+<li><p>入口点模糊技术（EPO）</p>
+<blockquote>
+<p>原理：即便是虚拟执行，也不可能查找文件的所有代码，虚拟执行通常会在规定步数内，检查待查文件是否具有解密循环，如果没有，就会判定该文件没有携带加密变形病毒，产生漏报<br>方法：病毒在宿主程序执行到某个位置时再获得控制权<br>应对：合理的增加检查的规定步数，如果规定步数较小，极易产生漏报，但规定步数也不能盲目增加，否则会无谓增加检测时间，如何确定规定步数的大小实在是件难事<br>实践上，这类病毒编写技术难度较大，在没有反汇编等工具的帮助下，很难在宿主体内定位一条指令，同时保证超过规定步数，又保证一定会被执行</p>
+</blockquote>
+</li>
+<li><p>多线程技术</p>
+<blockquote>
+<p>虚拟对于模拟启动多线程的工作很难与真实效果一致，多线程切换需要交由下层操作系统负责管理，虚拟机只能在被执行线程独占CPU时间<br>方法：在解密部分入口启动额外线程，使得解密代码在该线程中工作<br>应对：改进虚拟机，支持这些特定的操作系统机制</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="病毒实时监控技术"><a href="#病毒实时监控技术" class="headerlink" title="病毒实时监控技术"></a>病毒实时监控技术</h2><p>原理：在文件打开、关闭、清除、写入等操作时检查文件是否是病毒携带者，如果是则根据用户的决定选择不同的处理方案，如清除病毒、禁止访问该文件、删除该文件或简单地忽略，从而有效地避免病毒在本地计算机上的感染传播</p>
+<p>难点：</p>
+<ol>
+<li>驱动程序编写难度大</li>
+<li>驱动程序与Ring3下客户程序通信问题</li>
+<li>驱动程序所占资源问题</li>
+</ol>
+<h2 id="病毒的清除"><a href="#病毒的清除" class="headerlink" title="病毒的清除"></a>病毒的清除</h2><p>引导型病毒感染时常攻击计算机的如下部位：</p>
+<ol>
+<li><p>硬盘主引导扇区</p>
+</li>
+<li><p>硬盘或软盘的BOOT扇区</p>
+</li>
+</ol>
+<p>修复：</p>
+<p>引导型病毒如果将原主引导扇区或BOOT扇区覆盖式写入根目录区，被覆盖的根目录区完全损坏，不可能修复。</p>
+<p> 如果引导型病毒将原主引导扇区或BOOT扇区覆盖式写入第一FAT表时，第二FAT表未破坏，则可以修复，可将第FAT表复制到第一FAT表中</p>
+<p> 一般而言，引导型病毒占用的其他部分存储空间，采用“坏簇”技术和“文件结束簇”技术占用的空间也需要收回，修改文件分配表即可</p>
+<p>清除.com文件中病毒：</p>
+<ol>
+<li>用Debug调入需清除病毒的文件程序，查找合法程序的程序头</li>
+<li>对于链接于文件头部的计算机病毒，可用合法文件移到文件偏移0100H处，设置CX后存盘的方法清除，debug –w 100会从100开始将CX中指定字节数写入文件</li>
+<li>对于链接于文件尾部的计算机病毒，可以将正常的文件头写入染毒的文件头，并通过设置CX寄存器并存盘的方法去掉程序中的病毒部分</li>
+<li>对内存中的病毒进行清除，病毒程序常驻内存后，一般修改中断向量，所以清除内存中的病毒可以将备份或同版本的中断向量表取代内存中的中断向量表，或直接关掉机器，用干净系统重启</li>
+<li>对于交叉感染或重复感染的.COM文件，一定要找出病毒感染的先后顺序，按从后向前的顺序逐个清除病毒，否则会损坏原文件</li>
+</ol>
+<p>清除.exe文件中病毒：</p>
+<ol>
+<li>清除.EXE文件病毒的方法与清除.COM文件中病毒的方法类似，只不过更繁琐的是恢复原文件头参数</li>
+<li>清除工作仍然要通过仔细分析病毒代码，找到原文件头参数，写回并丢掉病毒程序代码</li>
+<li>由于Debug程序拒绝写.EXE文件，所以在清除.EXE文件中的病毒时应首先将.EXE文件改名，然后再清除</li>
+<li>对于感染PE文件的病毒，可以用PEditor、LordPE等工具软件删除病毒体、恢复程序入口点（正常程序的入口一般是PE文件中的第一个节.text），从而达到清除病毒的目的。若病毒采用了EPO等技术，清除工作将变得异常繁杂</li>
+</ol>
+<h2 id="病毒免疫技术"><a href="#病毒免疫技术" class="headerlink" title="病毒免疫技术"></a>病毒免疫技术</h2><ol>
+<li>针对某一种病毒进行的计算机病毒免疫</li>
+</ol>
+<p> 优点：是可以有效地防止某一种特定病毒的传染</p>
+<p> 缺点：</p>
+<ol>
+<li><p>无法处理不设置感染标识或设置后不能有效判断的病毒</p>
+</li>
+<li><p>病毒变种不再使用这个免疫标志、或出现新病毒时，失去作用</p>
+</li>
+<li><p>某些病毒的免疫标志不容易仿制，若必须加上这种标志，则需对原文件做大的改动，例如大麻病毒；</p>
+</li>
+<li><p>由于病毒的种类较多，不可能对各种病毒都加上免疫标识</p>
+</li>
+<li><p>能阻止传染，却不能阻止病毒的破坏行为，对已中毒文件无能为力</p>
+</li>
+<li><p>基于自我完整性检查的计算机病毒免疫（只用于文件）</p>
+<p>原理：为可执行程序增加一个免疫外壳（1~3KB），同时在免疫外壳中记录有关用于恢复自身的信息。执行具有这种免疫功能的程序时，免疫外壳首先得到运行，检查自身的程序大小、校验和、生成日期和时间等情况，没有发现异常后，再转去执行受保护的程序</p>
+<p>优点：这种方法不只是针对病毒的，由于其他原因造成的文件变化，在大多数情况下免疫外壳程序都能使文件自身得到复原</p>
+<p>缺点：</p>
+<ol>
+<li>每个受到保护的文件都要增加额外的存储空间</li>
+<li>现有一些校验码算法不能满足防病毒需要，无法检查某些病毒感染的文件</li>
+<li>无法对抗覆盖方式的文件型病毒</li>
+<li>有些类型的文件不能使用免疫外壳的防护方法，否则将不能正常执行</li>
+<li>当已被病毒感染的文件也被免疫外壳包裹，妨碍反病毒软件的检测清除</li>
+</ol>
+</li>
+</ol>
+<p><img src="/images/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/image-20210521091543540.png" alt="image-20210521091543540"></p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>病毒结束啦！考试加油。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/20/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/" rel="prev" title="病毒_Win_指令Patch实现和重定位表">
+      <i class="fa fa-chevron-left"></i> 病毒_Win_指令Patch实现和重定位表
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/27/%E5%88%86%E5%B8%83%E5%BC%8F-chapter1/" rel="next" title="分布式-chapter1">
+      分布式-chapter1 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%BB%BC%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">反病毒技术综述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%97%85%E6%AF%92%E9%98%B2%E6%B2%BB%E6%8A%80%E6%9C%AF%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-number">1.2.</span> <span class="nav-text">计算机病毒防治技术的划分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E9%98%B2%E6%B2%BB%E6%8A%80%E6%9C%AF%E4%BB%8E%E8%A2%AB%E5%8A%A8%E5%88%B0%E4%B8%BB%E5%8A%A8"><span class="nav-number">1.3.</span> <span class="nav-text">病毒防治技术从被动到主动</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E9%98%B2%E8%8C%83%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-number">1.4.</span> <span class="nav-text">病毒防范的概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E9%A2%84%E9%98%B2%E6%8E%AA%E6%96%BD"><span class="nav-number">1.5.</span> <span class="nav-text">病毒预防措施</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E6%A3%80%E6%B5%8B%E6%8A%80%E6%9C%AF%E5%88%86%E7%B1%BB"><span class="nav-number">1.6.</span> <span class="nav-text">计算机检测技术分类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%97%85%E6%AF%92%E8%AF%8A%E6%96%AD%E6%96%B9%E6%B3%95%E5%8F%8A%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">常见病毒诊断方法及原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AF%94%E8%BE%83%E8%AF%8A%E6%96%AD%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">比较诊断法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%A1%E9%AA%8C%E5%92%8C%E8%AF%8A%E6%96%AD%E6%B3%95"><span class="nav-number">2.2.</span> <span class="nav-text">校验和诊断法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%AB%E6%8F%8F%E8%AF%8A%E6%96%AD%E6%B3%95"><span class="nav-number">2.3.</span> <span class="nav-text">扫描诊断法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA%E7%9B%91%E6%B5%8B%E8%AF%8A%E6%96%AD%E6%B3%95"><span class="nav-number">2.4.</span> <span class="nav-text">行为监测诊断法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%84%9F%E6%9F%93%E5%AE%9E%E9%AA%8C%E8%AF%8A%E6%96%AD%E6%B3%95"><span class="nav-number">2.5.</span> <span class="nav-text">感染实验诊断法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E6%A8%A1%E6%8B%9F%E8%AF%8A%E6%96%AD%E6%B3%95"><span class="nav-number">2.6.</span> <span class="nav-text">软件模拟诊断法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E8%AF%8A%E6%96%AD%E6%B3%95"><span class="nav-number">2.7.</span> <span class="nav-text">分析诊断法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8F%91%E5%BC%8F%E4%BB%A3%E7%A0%81%E6%89%AB%E6%8F%8F%E6%8A%80%E6%9C%AF"><span class="nav-number">3.</span> <span class="nav-text">启发式代码扫描技术</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%9F%A5%E6%AF%92%E6%8A%80%E6%9C%AF"><span class="nav-number">4.</span> <span class="nav-text">虚拟机查毒技术</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E5%AE%9E%E6%97%B6%E7%9B%91%E6%8E%A7%E6%8A%80%E6%9C%AF"><span class="nav-number">5.</span> <span class="nav-text">病毒实时监控技术</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E7%9A%84%E6%B8%85%E9%99%A4"><span class="nav-number">6.</span> <span class="nav-text">病毒的清除</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E5%85%8D%E7%96%AB%E6%8A%80%E6%9C%AF"><span class="nav-number">7.</span> <span class="nav-text">病毒免疫技术</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">8.</span> <span class="nav-text">结语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

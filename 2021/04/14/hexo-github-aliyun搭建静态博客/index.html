@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="写在前面：本来是用windows搭建的博客，但奈何Linux太香了，加上之前装过wsl，所以打算用Linux再搭建一下。另外由于我是搭建好后再写的这篇博客，难免有些记忆错误出现纰漏，望指正。 另：这篇博客持续更新中，现在可能写的还不是很详细，请同时参考参考文献中B站up主code sheep的视频为佳。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hexo+github搭建静态博客">
+<meta property="og:url" content="https://wsw8.online/2021/04/14/hexo-github-aliyun%E6%90%AD%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="写在前面：本来是用windows搭建的博客，但奈何Linux太香了，加上之前装过wsl，所以打算用Linux再搭建一下。另外由于我是搭建好后再写的这篇博客，难免有些记忆错误出现纰漏，望指正。 另：这篇博客持续更新中，现在可能写的还不是很详细，请同时参考参考文献中B站up主code sheep的视频为佳。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-04-14T10:45:23.000Z">
+<meta property="article:modified_time" content="2021-05-11T13:34:08.581Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="自学">
+<meta property="article:tag" content="博客">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wsw8.online/2021/04/14/hexo-github-aliyun%E6%90%AD%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>hexo+github搭建静态博客 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/04/14/hexo-github-aliyun%E6%90%AD%E5%BB%BA%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hexo+github搭建静态博客
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-04-14 18:45:23" itemprop="dateCreated datePublished" datetime="2021-04-14T18:45:23+08:00">2021-04-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-11 21:34:08" itemprop="dateModified" datetime="2021-05-11T21:34:08+08:00">2021-05-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/" itemprop="url" rel="index"><span itemprop="name">博客搭建</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><strong>写在前面：本来是用windows搭建的博客，但奈何Linux太香了，加上之前<a href="https://wsw8.online/archives/cee22f12.html">装过wsl</a>，所以打算用Linux再搭建一下。另外由于我是搭建好后再写的这篇博客，难免有些记忆错误出现纰漏，望指正。</strong></p>
+<p><strong>另：这篇博客持续更新中，现在可能写的还不是很详细，请同时参考参考文献中B站up主code sheep的视频为佳。</strong></p>
+<span id="more"></span>
+
+<h2 id="下载nodejs和npm"><a href="#下载nodejs和npm" class="headerlink" title="下载nodejs和npm"></a>下载nodejs和npm</h2><blockquote>
+<p>Windows下：</p>
+</blockquote>
+<p>直接在<a target="_blank" rel="noopener" href="https://nodejs.org/zh-cn/">nodejs官网</a>进行下载并安装<br><code>node -v</code>命令查看node的版本<br><code>npm -v</code>命令查看npm的版本</p>
+<blockquote>
+<p> Linux 下：</p>
+</blockquote>
+<p>可以直接使用命令安装</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install nodejs</span><br></pre></td></tr></table></figure>
+
+<h3 id="可能出现的问题"><a href="#可能出现的问题" class="headerlink" title="可能出现的问题"></a>可能出现的问题</h3><p>可能会出现nodejs和npm版本不匹配的问题，这可能是由于Linux上版本太老的缘故，如果出现就要自己手动去官网下载包然后解压在Linux下了</p>
+<p>关于nodejs和npm版本适配可参考这个<a target="_blank" rel="noopener" href="https://nodejs.org/zh-cn/download/releases/">官网说明</a></p>
+<h3 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h3><ol>
+<li><p>下载对应的包：<a target="_blank" rel="noopener" href="https://nodejs.org/zh-cn/download/">nodejs各种版本官网</a></p>
+</li>
+<li><p>下载好后挪到Linux下，wsl在windows下的目录可以参考<code>C:\Users\Admin\AppData\Local\Packages\TheDebianProject.DebianGNULinux_76v4gfsz19hv4\LocalState\rootfs</code></p>
+</li>
+<li><p>把包放到<code>/opt</code>下，这个文件夹就是用来放用户自己安装的软件的</p>
+</li>
+<li><p>解压使用命令<code>tar -xf 包名</code></p>
+</li>
+<li><p>解压成功后应该可以在<code>/opt/包名/bin/</code>目录下看到<code>node</code>和<code>npm</code>，你进入这个目录，使用<code>./node -v</code>和<code>./npm -v</code>就能查看相应版本，但是这样你每次使用必须给路径很麻烦，所以你可以建立一个软链接</p>
+</li>
+<li><p>给可执行文件建立软链接：</p>
+<ol>
+<li>输入<code>echo $PATH</code>可以查看你的Linux系统的查找可执行文件的路径，<strong>注意大写</strong></li>
+<li>进入<code>/usr/local/bin</code>目录</li>
+<li>使用<code>ln -s [源文件或目录] [目标文件或目录]</code>就可以建立软链接，例如这里的建立node的<code>ln -s /opt/node-v14.16.1-linux-x64/bin/node ./node</code>和npm的<code>ln -s /opt/node-v14.16.1-linux-x64/bin/npm ./npm</code></li>
+<li>现在你就可以在任何一个目录下使用<code>npm -v</code>和<code>node -v</code>查看版本以及其它命令了</li>
+</ol>
+</li>
+</ol>
+<h2 id="npm加速"><a href="#npm加速" class="headerlink" title="npm加速"></a>npm加速</h2><p>为了加快npm的速度有两种方法：</p>
+<ol>
+<li><p>然后利用npm安装淘宝的cnpm<br><code>npm install -g cnpm --registry=http://registry.npm.taobao.org</code>命令安装淘宝的cnpm包管理器<br><code>cnpm -v</code>命令查看cnpm的版本</p>
+</li>
+<li><p>npm换源</p>
+<p><code>npm config get registry</code>可以查看源地址</p>
+<p><code>npm config set [url]</code>可以更换源地址</p>
+<p>其中url可选：</p>
+<p><code>https://registry.npmjs.org/</code>为官方源地址</p>
+<p><code>https://registry.npm.taobao.org/</code>为淘宝源地址</p>
+</li>
+</ol>
+<h2 id="下载hexo并创建本地的静态博客"><a href="#下载hexo并创建本地的静态博客" class="headerlink" title="下载hexo并创建本地的静态博客"></a>下载hexo并创建本地的静态博客</h2><ol>
+<li><code>cnpm install -g hexo-cli</code>安装hexo</li>
+<li><code>hexo -v</code>查看hexo版本</li>
+<li>然后创建一个你存博客的目录并进入到该目录<br><code>mkdir blog</code><br><code>cd blog</code></li>
+<li>使用<code>hexo init</code>在当前目录下生成博客的框架</li>
+<li>使用<code>hexo s</code>开启博客，进入<code>http://localhost:4000/</code>查看本地博客内容</li>
+<li>使用<code>hexo n &quot;文章名&quot;</code>创建新的文章，然后找到在<code>/source/_post</code>目录下找到文章编辑即可，使用markdown语法，<a target="_blank" rel="noopener" href="https://www.runoob.com/markdown/md-tutorial.html">markdown语法参考</a>，很简单，一会就能学会，你也可以下一款markdown编辑器，我用的<a target="_blank" rel="noopener" href="https://typora.io/">typora</a></li>
+</ol>
+<h2 id="部署到GitHub上"><a href="#部署到GitHub上" class="headerlink" title="部署到GitHub上"></a>部署到GitHub上</h2><ol>
+<li>在你的GitHub上新建一个仓库，命名为<code>YourGithubName.github.io</code></li>
+<li>然后<code>cnpm install --save hexo-deployer-git</code>在blog目录下安装git部署插件</li>
+<li>下面配置_config.yml</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line">deploy:</span><br><span class="line"> 		<span class="built_in">type</span>: git</span><br><span class="line">		repo: https://github.com/YourGithubName/YourGithubName.github.io.git</span><br><span class="line"> 		branch: master</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li><p>最后运行以下三条命令：<br><code>hexo clean</code>清理<br><code>hexo g</code>生成<br><code>hexo d</code>部署</p>
+<p>以上三条命令基本是每次修改博客后都要运行的</p>
+</li>
+<li><p>最后在<code>https://YourGithubName.github.io</code>下就可以查看啦！</p>
+</li>
+<li><p>注意浏览器可能会有缓存导致生效比较慢，每次更新后可<code>shift+F5</code>强制刷新并多等会</p>
+</li>
+</ol>
+<hr>
+<h2 id="主题的更换"><a href="#主题的更换" class="headerlink" title="主题的更换"></a>主题的更换</h2><p>更改主题一般分三步：</p>
+<ol>
+<li><code>git clone https://github.com/theme-next/hexo-theme-next themes/next</code>利用git将别人仓库里的主题克隆到自己的blog下的themes文件夹里</li>
+<li>修改blog目录下的 _config.yml 文件中的  theme改为theme: next</li>
+<li>更改完成，运行<code>hexo clean&amp;&amp;hexo g&amp;&amp;hexo d</code>就可以看到变化啦</li>
+</ol>
+<h2 id="其他资料"><a href="#其他资料" class="headerlink" title="其他资料"></a>其他资料</h2><p>关于主题的美化和一些其他配置，博主小丁的博客里介绍的非常详细，我也是根据他的博客一步步来的，他的<a target="_blank" rel="noopener" href="https://tding.top/">博客地址</a></p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1Yb411a7ty">b站大佬视频讲解</a></li>
+<li><a target="_blank" rel="noopener" href="https://543877815.github.io/">逗比学长的博客</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%87%AA%E5%AD%A6/" rel="tag"># 自学</a>
+              <a href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag"># 博客</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%B8%80%E7%AB%A0/" rel="next" title="编译原理第一章">
+      编译原理第一章 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BDnodejs%E5%92%8Cnpm"><span class="nav-number">1.</span> <span class="nav-text">下载nodejs和npm</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%83%BD%E5%87%BA%E7%8E%B0%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.</span> <span class="nav-text">可能出现的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3"><span class="nav-number">1.2.</span> <span class="nav-text">问题解决</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#npm%E5%8A%A0%E9%80%9F"><span class="nav-number">2.</span> <span class="nav-text">npm加速</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BDhexo%E5%B9%B6%E5%88%9B%E5%BB%BA%E6%9C%AC%E5%9C%B0%E7%9A%84%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2"><span class="nav-number">3.</span> <span class="nav-text">下载hexo并创建本地的静态博客</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E5%88%B0GitHub%E4%B8%8A"><span class="nav-number">4.</span> <span class="nav-text">部署到GitHub上</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E9%A2%98%E7%9A%84%E6%9B%B4%E6%8D%A2"><span class="nav-number">5.</span> <span class="nav-text">主题的更换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E8%B5%84%E6%96%99"><span class="nav-number">6.</span> <span class="nav-text">其他资料</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">7.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

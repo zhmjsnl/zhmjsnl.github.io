@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="栈定义：是一种用来存储函数调用时的临时信息的结构，如函数调用所传递的参数、函数的返回地址、函数的局部变量等 特性：先进后出（FILO） 基本操作：  PUSH：压栈 POP：弹栈">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_DOS_函数调用">
+<meta property="og:url" content="https://wsw8.online/2021/05/10/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="栈定义：是一种用来存储函数调用时的临时信息的结构，如函数调用所传递的参数、函数的返回地址、函数的局部变量等 特性：先进后出（FILO） 基本操作：  PUSH：压栈 POP：弹栈">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511195956130.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511200219660.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511200418376.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511200752137.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511201041931.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511201411512.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511202236918.png">
+<meta property="article:published_time" content="2021-05-10T07:31:00.000Z">
+<meta property="article:modified_time" content="2021-05-11T13:48:35.923Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511195956130.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/10/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_DOS_函数调用 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/10/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_DOS_函数调用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-10 15:31:00" itemprop="dateCreated datePublished" datetime="2021-05-10T15:31:00+08:00">2021-05-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-11 21:48:35" itemprop="dateModified" datetime="2021-05-11T21:48:35+08:00">2021-05-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="栈"><a href="#栈" class="headerlink" title="栈"></a>栈</h2><p>定义：是一种用来存储函数调用时的临时信息的结构，如函数调用所传递的参数、函数的返回地址、函数的局部变量等</p>
+<p>特性：先进后出（FILO）</p>
+<p>基本操作：</p>
+<ol>
+<li>PUSH：压栈</li>
+<li>POP：弹栈</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="函数调用对栈的操作"><a href="#函数调用对栈的操作" class="headerlink" title="函数调用对栈的操作"></a>函数调用对栈的操作</h2><ol>
+<li>把指令寄存器EIP（指向当前CPU将要运行的下一条指令的地址）入栈，作为程序的返回地址（一般用RET）表示</li>
+<li>把基址寄存器EBP入栈（保护数据）</li>
+<li>把EBP设为栈顶指针ESP，作为新的基地址</li>
+<li>动态存储分配留出一定空间，即把ESP减去一个适当的值</li>
+</ol>
+<h3 id="获取参数值"><a href="#获取参数值" class="headerlink" title="获取参数值"></a>获取参数值</h3><p>call指令执行完毕的栈布局：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511195956130.png" alt="image-20210511195956130"></p>
+<p>为了得到参数2，我们使用EBP保存ESP，而为了保护保存ESP的EBP，我们将其入栈，得到如此结构：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511200219660.png" alt="image-20210511200219660"></p>
+<h3 id="获取局部变量值"><a href="#获取局部变量值" class="headerlink" title="获取局部变量值"></a>获取局部变量值</h3><p>栈分布如图：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511200418376.png" alt="image-20210511200418376"></p>
+<h3 id="获取返回值"><a href="#获取返回值" class="headerlink" title="获取返回值"></a>获取返回值</h3><p>函数返回值通过eax寄存器传递，如果两个返回值还会使用edx：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511200752137.png" alt="image-20210511200752137"></p>
+<p>如果返回值太大、就需要主调函数在call被调函数之前创建临时空间：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511201041931.png" alt="image-20210511201041931"></p>
+<p>然后，在被调函数传递返回值时：</p>
+<ol>
+<li>通过[EBP+偏移]获得返回值的存放地址</li>
+<li>把返回值写入到这个内存</li>
+<li>把返回值写入到EAX，<code>mov eax,[ebp+偏移]</code></li>
+</ol>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511201411512.png" alt="image-20210511201411512"></p>
+<h2 id="函数调用的扫尾工作"><a href="#函数调用的扫尾工作" class="headerlink" title="函数调用的扫尾工作"></a>函数调用的扫尾工作</h2><ol>
+<li>平衡栈，清除参数传递消耗的栈空间</li>
+<li>只需要改变esp值就可</li>
+<li>可以由调用函数使用<code>ret 参数占用栈大小</code>来清除</li>
+</ol>
+<h2 id="栈溢出"><a href="#栈溢出" class="headerlink" title="栈溢出"></a>栈溢出</h2><p>例如程序：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="type">char</span> name[<span class="number">16</span>];</span><br><span class="line">    gets(name);</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;<span class="number">16</span>&amp;&amp;name[i];i++)</span><br><span class="line">        <span class="built_in">printf</span>(“%c”,name[i]);</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<p>当我们输入的数据大于16个字节时就会产生栈溢出，此时输入的字节会覆盖栈底内容导致出错，这就是栈溢出</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/image-20210511202236918.png" alt="image-20210511202236918"></p>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><ol>
+<li>关于函数，下列说法不正确的是（       ）<br>A. 被调函数通过EBP+偏移访问主调函数传递的参数<br>B. 被调函数返回后，主调函数不需要再进行清栈的动作<br>C. 被调函数通过寄存器将返回值或返回值地址传递给主调函数<br>D. 被调函数通过EBP-偏移访问自己的局部变量</li>
+</ol>
+<p>参考答案：B</p>
+<p>解析：主调函数是否进行清栈是根据被调函数是否清栈来的，而不是一定不清栈</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/08/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/" rel="prev" title="病毒_DOS_病毒寄生">
+      <i class="fa fa-chevron-left"></i> 病毒_DOS_病毒寄生
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/12/%E7%97%85%E6%AF%92-DOS-%E5%BC%95%E5%AF%BC%E4%B8%8E%E4%B8%AD%E6%96%AD/" rel="next" title="病毒_DOS_引导与中断">
+      病毒_DOS_引导与中断 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%88"><span class="nav-number">1.</span> <span class="nav-text">栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E5%AF%B9%E6%A0%88%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="nav-number">2.</span> <span class="nav-text">函数调用对栈的操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E5%8F%82%E6%95%B0%E5%80%BC"><span class="nav-number">2.1.</span> <span class="nav-text">获取参数值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E5%80%BC"><span class="nav-number">2.2.</span> <span class="nav-text">获取局部变量值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E8%BF%94%E5%9B%9E%E5%80%BC"><span class="nav-number">2.3.</span> <span class="nav-text">获取返回值</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E7%9A%84%E6%89%AB%E5%B0%BE%E5%B7%A5%E4%BD%9C"><span class="nav-number">3.</span> <span class="nav-text">函数调用的扫尾工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%88%E6%BA%A2%E5%87%BA"><span class="nav-number">4.</span> <span class="nav-text">栈溢出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text">例题</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

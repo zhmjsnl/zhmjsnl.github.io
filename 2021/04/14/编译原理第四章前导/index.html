@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="形式语言与自动机基础知识字母表有非空性、有穷性、单一性  Σ代表字母表ε代表空串{ε}代表仅含有空串的集合Φ代表空集αβ代表两个字符串α与β的连接（并置）α^n^ 代表α的n次连接，其中α^0^ &#x3D;ε，α^n^ &#x3D;α^n-1^ α  其中n&gt;0AB代表集合A与B的连接，A&#x3D;{a1,a2,a3,…,an}，B&#x3D;{b1,b2,b3,…,bm}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="编译原理第四章前导">
+<meta property="og:url" content="https://wsw8.online/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E5%9B%9B%E7%AB%A0%E5%89%8D%E5%AF%BC/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="形式语言与自动机基础知识字母表有非空性、有穷性、单一性  Σ代表字母表ε代表空串{ε}代表仅含有空串的集合Φ代表空集αβ代表两个字符串α与β的连接（并置）α^n^ 代表α的n次连接，其中α^0^ &#x3D;ε，α^n^ &#x3D;α^n-1^ α  其中n&gt;0AB代表集合A与B的连接，A&#x3D;{a1,a2,a3,…,an}，B&#x3D;{b1,b2,b3,…,bm}">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-04-14T10:54:34.000Z">
+<meta property="article:modified_time" content="2021-05-10T08:29:52.459Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="编译原理">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wsw8.online/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E5%9B%9B%E7%AB%A0%E5%89%8D%E5%AF%BC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>编译原理第四章前导 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E5%9B%9B%E7%AB%A0%E5%89%8D%E5%AF%BC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          编译原理第四章前导
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-04-14 18:54:34" itemprop="dateCreated datePublished" datetime="2021-04-14T18:54:34+08:00">2021-04-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-10 16:29:52" itemprop="dateModified" datetime="2021-05-10T16:29:52+08:00">2021-05-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">编译原理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="形式语言与自动机"><a href="#形式语言与自动机" class="headerlink" title="形式语言与自动机"></a>形式语言与自动机</h3><h4 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h4><p>字母表有非空性、有穷性、单一性</p>
+<blockquote>
+<p>Σ代表字母表<br>ε代表空串<br>{ε}代表仅含有空串的集合<br>Φ代表空集<br>αβ代表两个字符串α与β的连接（并置）<br>α^n^ 代表α的n次连接，其中α^0^ &#x3D;ε，α^n^ &#x3D;α^n-1^ α  其中n&gt;0<br>AB代表集合A与B的连接，A&#x3D;{a1,a2,a3,…,an}，B&#x3D;{b1,b2,b3,…,bm}</p>
+<span id="more"></span>
+<blockquote>
+<p>则AB&#x3D;<br>{ a1b1，a1b2，a1b3，…，a1bm，<br>a2b1，a2b2，a2b3，…，a2bm，<br>a3b1，a3b2，a3b3，…，a3bm，<br>…<br>anb1，anb2，anb3，…，anbm }</p>
+<p>注意：AФ&#x3D;ФA&#x3D;Ф，A{ε}&#x3D;{ε}A&#x3D;A</p>
+</blockquote>
+<p>A^n^ 代表集合A的n次连接（n次幂），A^0^ &#x3D; {ε}，A^n^ &#x3D; A^n-1^A    n ≥ 1<br>A^<em>^ 代表A上所有字符串的集合，称作集合A的克林闭包<br>A^</em>^ &#x3D; A^0^ ∪ A^1^ ∪ A^2^ ∪  …∪ A^n^<br>A^+^ 称为A的正闭包<br>A^+^&#x3D;A^1^∪A^2^∪A^3^∪…∪A^n^</p>
+</blockquote>
+<p>定义：</p>
+<p>给定字母表∑，则∑*的任意子集L称为字母表∑上的一个语言。</p>
+<p>设∑是一个字母表，∀L ⊆ ∑*, ∀x ∈ L, x称为L的一个句子。</p>
+<blockquote>
+<p>eg：Σ＝{0，1}，请给出语言的形式表示</p>
+<ol>
+<li>所有以0开头，以1结尾的串的语言。</li>
+<li>所有以11开头，11结尾的串的语言。</li>
+<li>所有长度为偶数的串的语言。</li>
+<li>所有长度为奇数的串的语言。</li>
+<li>所有包含子串01011的串的语言。</li>
+<li>所有的第10个字符是0的串的语言。</li>
+</ol>
+<p>answer：</p>
+<ol>
+<li>{0} {0,1}^*^ {1}</li>
+<li>{11} {0,1}^*^ {11} ∪ {11,111}</li>
+<li>{00,01,10,11}^*^</li>
+<li>{00,01,10,11}^*^ {0,1}</li>
+<li>{0,1}^<em>^ {011011} {0,1}^</em>^</li>
+<li>{0,1}^9^ {0} {0,1}^*^</li>
+</ol>
+</blockquote>
+<h4 id="形式语言与自动机理论简介"><a href="#形式语言与自动机理论简介" class="headerlink" title="形式语言与自动机理论简介"></a>形式语言与自动机理论简介</h4><h5 id="初步认识"><a href="#初步认识" class="headerlink" title="初步认识"></a>初步认识</h5><p>语言的定义可以从两个方面进行：</p>
+<ol>
+<li>从产生语言的角度</li>
+<li>从接收（识别）语言的角度</li>
+</ol>
+<ul>
+<li><p>产生语言</p>
+<p>根据语言中的基本句子和其他句子的形成规则，得到（产生）该语言所包含的所有句子</p>
+<p>属于<strong>形式语言</strong>所研究的问题</p>
+</li>
+<li><p>接收语言</p>
+<p>使用自动机模型来接收字符串，接收的所有字符串，也形成一个语言</p>
+<p>属于<strong>自动机</strong>所研究的问题</p>
+</li>
+</ul>
+<h5 id="统一的理论"><a href="#统一的理论" class="headerlink" title="统一的理论"></a>统一的理论</h5><p>形式语言与自动机作为统一的理论，实际上包括3个方面的内容：</p>
+<ol>
+<li>形式语言理论（产生语言）</li>
+<li>自动机理论（接收语言）</li>
+<li>形式语言与自动机的等价性理论</li>
+</ol>
+<h5 id="括号匹配串的语言"><a href="#括号匹配串的语言" class="headerlink" title="括号匹配串的语言"></a>括号匹配串的语言</h5><p><strong>自然语言描述：</strong></p>
+<blockquote>
+<ol>
+<li><p>（）是该语言的最基本的句子</p>
+</li>
+<li><p>若S是句子，则（S）是句子</p>
+</li>
+<li><p>若S是句子，则SS是句子</p>
+</li>
+</ol>
+</blockquote>
+<p>根据以上形成规则，我们可以：</p>
+<ol>
+<li>产生该语言的任意的句子</li>
+<li>判断某个串是否是该语言的句子——<strong>语法分析</strong></li>
+</ol>
+<p><strong>巴克斯-诺尔范式（BNF）描述：</strong></p>
+<blockquote>
+<ol>
+<li><p>&lt;括号匹配串&gt;::&#x3D;()</p>
+</li>
+<li><p>&lt;括号匹配串&gt;::&#x3D;(&lt;括号匹配串&gt;)</p>
+</li>
+<li><p>&lt;括号匹配串&gt;::&#x3D;&lt;括号匹配串&gt;&lt;括号匹配串&gt;</p>
+</li>
+</ol>
+</blockquote>
+<p><strong>Chomsky描述：</strong></p>
+<blockquote>
+<ol>
+<li><p>S-&gt;()</p>
+</li>
+<li><p>S-&gt;(S)</p>
+</li>
+<li><p>S-&gt;SS</p>
+</li>
+</ol>
+<p><strong>注：为方便起见，箭头打成-&gt;</strong></p>
+</blockquote>
+<p>术语：</p>
+<blockquote>
+<ol>
+<li>S称为非终结符，是在推导中可以被替代的符号。</li>
+<li>（）称为终结符，是在推导中不可以被替代的符号</li>
+<li>-&gt;是产生式系统的元符号</li>
+</ol>
+</blockquote>
+<p>结论：</p>
+<p>一个语言，可以使用不同的产生式组合来产生。</p>
+<p>注意：</p>
+<p>D-&gt;0|1|2|3|4|5|6|7|8|9<strong>不能</strong>简写为D-&gt;0|…|9</p>
+<p>eg：算术表达式的形成规则</p>
+<blockquote>
+<p>E-&gt;E+T|E-T|T<br>T-&gt;T*F|T&#x2F;F|F<br>F-&gt;(E)|I<br>I-&gt;L|IL|ID<br>L-&gt;a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z<br>D-&gt;0|1|2|3|4|5|6|7|8|9</p>
+</blockquote>
+<p>注意：其中E代表表达式，T代表项，F代表因子，先因子再乘除最后加减</p>
+<p>注：这是算术表达式，不包含关系表达式的定义（&lt;、&lt;&#x3D;、&gt;、&gt;&#x3D;、&lt; &gt;、&#x3D;），并且标识符没有考虑下划线和大写字母</p>
+<h4 id="文法"><a href="#文法" class="headerlink" title="文法"></a>文法</h4><p>定义：</p>
+<blockquote>
+<p>文法G是一个四元式，G&#x3D;（V<del>T</del> ，V<del>N</del> ，S ，P ）</p>
+<p>V<del>T</del> 是有限字符的集合，元素称为字母或者<strong>终结符</strong></p>
+<p>V<del>N</del> 是有限字符的集合，元素称为变量或<strong>非终结符</strong></p>
+<p>S∈V，称为文法的开始符号</p>
+<p>P是产生式α-&gt;β的集合</p>
+<blockquote>
+<p>α∈(V<del>T</del> U V<del>N</del> )^+^ ，至少包含一个非终结符</p>
+<p>β∈(V<del>T</del> U V<del>N</del> )^*^</p>
+<p>α-&gt;ε，称为空串产生式或者ε产生式</p>
+</blockquote>
+</blockquote>
+<h5 id="推导（派生）"><a href="#推导（派生）" class="headerlink" title="推导（派生）"></a>推导（派生）</h5><p>定义：文法G，α和β是集合(V<del>T</del> ∪V<del>N</del> )上的串，α&#x3D; pvr ，β&#x3D;pur(p和r可能同时为ε)，而v→u是的一个产生式，则称α直接推导出β，记为α&#x3D;&gt;β ，即pvr &#x3D;&gt;pur。</p>
+<p>术语：</p>
+<blockquote>
+<p>y&#x3D;&gt;^+^ z 多步推导<br>y&#x3D;&gt;^*^ z 任意步推导（多了y&#x3D;z的情况）</p>
+<p>S&#x3D;&gt;^<em>^ ω 则ω是文法的一个句型<br>进一步若ω∈V<del>T</del> ^</em>^ ，ω称为句子</p>
+<p>L(G) &#x3D;{ω|S&#x3D;&gt;^+^ ω，且ω∈V<del>T</del>*} ，则L（G）称为文法G产生的语言</p>
+<blockquote>
+<p>一个语言<strong>可以</strong>由多个不同的文法产生<br>一个文法<strong>只能</strong>产生一个语言</p>
+</blockquote>
+</blockquote>
+<p>eg：</p>
+<blockquote>
+<p>产生语言L（G）&#x3D; { a^n^ b^n^ c^n^ |n&gt;0} 文法</p>
+<blockquote>
+<p>解一：</p>
+<p>S→aSBC        ①<br>S→aBC          ②<br>CB→BC         ③<br>aB→ab          ④<br>bB→bb          ⑤<br>bC→bc          ⑥<br>cC→cc           ⑦</p>
+<p>解二：</p>
+<p>S→abc|aSBc<br>  cB→Bc<br>  aB→ab<br>  bB→bb</p>
+<p><strong>类似思想还可以写出很多文法</strong></p>
+</blockquote>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/" rel="tag"># 编译原理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%B8%89%E7%AB%A0/" rel="prev" title="编译原理第三章">
+      <i class="fa fa-chevron-left"></i> 编译原理第三章
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E5%9B%9B%E7%AB%A0/" rel="next" title="编译原理第四章">
+      编译原理第四章 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%A2%E5%BC%8F%E8%AF%AD%E8%A8%80%E4%B8%8E%E8%87%AA%E5%8A%A8%E6%9C%BA"><span class="nav-number">1.</span> <span class="nav-text">形式语言与自动机</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">1.1.</span> <span class="nav-text">基础知识</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BD%A2%E5%BC%8F%E8%AF%AD%E8%A8%80%E4%B8%8E%E8%87%AA%E5%8A%A8%E6%9C%BA%E7%90%86%E8%AE%BA%E7%AE%80%E4%BB%8B"><span class="nav-number">1.2.</span> <span class="nav-text">形式语言与自动机理论简介</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E8%AE%A4%E8%AF%86"><span class="nav-number">1.2.1.</span> <span class="nav-text">初步认识</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BB%9F%E4%B8%80%E7%9A%84%E7%90%86%E8%AE%BA"><span class="nav-number">1.2.2.</span> <span class="nav-text">统一的理论</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8B%AC%E5%8F%B7%E5%8C%B9%E9%85%8D%E4%B8%B2%E7%9A%84%E8%AF%AD%E8%A8%80"><span class="nav-number">1.2.3.</span> <span class="nav-text">括号匹配串的语言</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%87%E6%B3%95"><span class="nav-number">1.3.</span> <span class="nav-text">文法</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8E%A8%E5%AF%BC%EF%BC%88%E6%B4%BE%E7%94%9F%EF%BC%89"><span class="nav-number">1.3.1.</span> <span class="nav-text">推导（派生）</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Patch的核心问题和解决思路核心问题 找到一条指令，并知道其起始边界 最好这条指令必然执行，否则patch了，病毒代码也不会必然执行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_Win_指令Patch和导入表机制">
+<meta property="og:url" content="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="Patch的核心问题和解决思路核心问题 找到一条指令，并知道其起始边界 最好这条指令必然执行，否则patch了，病毒代码也不会必然执行">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/image-20210520092949171.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/image-20210520095154024.png">
+<meta property="article:published_time" content="2021-05-19T13:21:52.000Z">
+<meta property="article:modified_time" content="2021-05-20T11:19:15.042Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/image-20210520092949171.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_Win_指令Patch和导入表机制 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_Win_指令Patch和导入表机制
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-19 21:21:52" itemprop="dateCreated datePublished" datetime="2021-05-19T21:21:52+08:00">2021-05-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-20 19:19:15" itemprop="dateModified" datetime="2021-05-20T19:19:15+08:00">2021-05-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Patch的核心问题和解决思路"><a href="#Patch的核心问题和解决思路" class="headerlink" title="Patch的核心问题和解决思路"></a>Patch的核心问题和解决思路</h2><h3 id="核心问题"><a href="#核心问题" class="headerlink" title="核心问题"></a>核心问题</h3><ol>
+<li>找到一条指令，并知道其起始边界</li>
+<li>最好这条指令必然执行，否则patch了，病毒代码也不会必然执行</li>
+</ol>
+<span id="more"></span>
+
+<h3 id="解决思路"><a href="#解决思路" class="headerlink" title="解决思路"></a>解决思路</h3><ol>
+<li>对一些常见特殊指令识别，比如push ebp；mov ebp，esp等，这是很多函数的开始，设定基址寄存器的组合。简单，方便。缺点：由于指令长度过短，可能和数据相同，因此不见得一定是指令；同时，不见得该代码一定会被执行</li>
+<li>对导入函数的调用指令进行Patch，这些指令可信度很高，可以选择某些必然被调用的函数指令去patch</li>
+<li>病毒自带反汇编器（如一些开源的反汇编器），静态分析宿主程序，随机找一条指令patch，隐蔽度极高，复杂，但patch的指令不一定会必然执行</li>
+<li>自带调试功能（相当于一个调试器），将宿主程序隐藏启动，单步调试运行，自然得到每条指令的边界</li>
+</ol>
+<h2 id="对调用导入函数的指令patch"><a href="#对调用导入函数的指令patch" class="headerlink" title="对调用导入函数的指令patch"></a>对调用导入函数的指令patch</h2><h3 id="函数调用"><a href="#函数调用" class="headerlink" title="函数调用"></a>函数调用</h3><p>函数调用一般采用call+相对偏移<br>机器码：E8 xx xx xx xx，其中xx xx xx xx是目标地址相对call指令<strong>后面那条指令</strong>的偏移（类似JMP）</p>
+<p>采用相对偏移好处：整个模块整体搬迁，偏移不变，不会出错<br>局限：相对偏移只能运用到同一模块中</p>
+<p>为了跨模块调用，在编译器和系统的协助下引入<strong>导入表机制</strong></p>
+<h3 id="导入表"><a href="#导入表" class="headerlink" title="导入表"></a>导入表</h3><p>为每个被调用的DLL函数设定一个“邮箱”（导入表项），系统加载DLL后，利用导出表机制获得函数的地址，然后将函数地址放到各自的“邮箱”中，调某个函数就从邮箱拿地址，而如何将对应的函数放到对应的“邮箱”，就利用了导入表机制</p>
+<p>图示：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/image-20210520092949171.png" alt="image-20210520092949171"></p>
+<h3 id="如何填写导入表"><a href="#如何填写导入表" class="headerlink" title="如何填写导入表"></a>如何填写导入表</h3><p>在可选头的数据目录的第二项就是导入表的描述，其中有导入表的RVA，导入表每一项是一个IMAGE_IMPORT_DESCRIPTION结构，代表一个导入的DLL的相关信息，这个结构中还有INT表（Import Name Table）和IAT表（Import Address Table）的RVA和DLL名等</p>
+<h4 id="INT表"><a href="#INT表" class="headerlink" title="INT表"></a>INT表</h4><p>加载前后，INT表内容不变，就是IAT加载前内容。INT可能不存在，但如果有地址预绑定，就必须有INT</p>
+<h4 id="IAT表"><a href="#IAT表" class="headerlink" title="IAT表"></a>IAT表</h4><p>必须，好比邮箱，编译后，IAT每项4个字节，是一个RVA，指向IMAGE_IMPORT_BY_NAME表中的一项，这一项就是对应函数的序号和函数名。加载后，IAT表的内容变为函数入口地址</p>
+<h4 id="INT与IAT"><a href="#INT与IAT" class="headerlink" title="INT与IAT"></a>INT与IAT</h4><p>一般情况下，INT（OriginalFirstThunk）和IAT（FirstThunk）内容相同，因此是冗余的，所以有的编译器不生成INT，RVA为0</p>
+<h4 id="IAT表初始化算法"><a href="#IAT表初始化算法" class="headerlink" title="IAT表初始化算法"></a>IAT表初始化算法</h4><ol>
+<li>从数据目录获得导入表入口，从入口开始，每项代表一个被引用的DLL，从其中DLL名RVA段可获得DLL名</li>
+<li>系统遍历编译时生成的每个INT或IAT（有INT就判断INT，预先绑定只能遍历INT），第二项存储的是一个RVA，指向IMAGE_IMPORT_BY_NAME</li>
+<li>找到该项，获得函数名串，以\0结尾，通过对应DLL的导出表找到相关函数的加载地址</li>
+<li>然后将其放入IAT表的第二项（此时，IAT表的值才变为函数的加载地址）</li>
+<li>如此遍历，将所有项都填入对应函数入口地址</li>
+<li>遍历IMAGE_IMPORT_DESCRIPTION表，对所有DLL都做2~4步处理</li>
+</ol>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/image-20210520095154024.png" alt="image-20210520095154024"></p>
+<h3 id="预先绑定"><a href="#预先绑定" class="headerlink" title="预先绑定"></a>预先绑定</h3><ol>
+<li>由于程序在加载时需要在IAT表中填写函数的加载地址入口，因此比较耗时，所以有了预先绑定技术</li>
+<li>预先绑定是在编译时向IAT表中填入导入地址（即函数的入口地址，不是指向IMAGE_IMPORT_BY_NAME表项的RVA），它是直接根据系统DLL的预期基址（ImageBase）计算出来的</li>
+<li>通过预先绑定，在实际加载时，只要系统DLL的基址没变，那么IAT表的内容就不需要再次填充</li>
+<li>所以要验证DLL是否被加载到预期地址，这时，不能使用IAT表指向IMAGE_IMPORT_BY_NAEM表项了，所以通过INT表再次执行导入表机制从而使得IAT表内容更新</li>
+<li>这就是为什么如果使用预先绑定导入地址，必须有INT表</li>
+<li>所以，只要INT存在，则用它检索IMAGE_IMPORT_BY_NAME，否则就用IAT表检索</li>
+</ol>
+<h3 id="patch感染"><a href="#patch感染" class="headerlink" title="patch感染"></a>patch感染</h3><p>思路：将CALL [xxxx]或JMP [xxxx]指令修改替换指向我们的代码，选择大多数程序都会调用的函数，例如GetCommandLine（获取程序的命令行参数然后以参数的形式传递给WinMain函数）</p>
+<p>细节：</p>
+<ol>
+<li><p>首先查找函数A的导入表想的地址xx xx xx xx（邮箱地址）</p>
+</li>
+<li><p>得到地址后查找代码节找到间接跳转指令</p>
+<p>FF 15 xx xx xx xx（CALL [xx xx xx xx]）或FF 25 xx xx xx xx（JMP [xx xx xx xx]）</p>
+</li>
+<li><p>分别Patch为跳转病毒指令</p>
+<p>E8 yy yy yy yy 90（CALL 偏移，NOP）或E9 yy yy yy yy（JMP偏移）</p>
+</li>
+<li><p>注意：CALL指令需要返回它的下一条指令，它有压栈和ret返回的操作，而JMP则没有，所以加90</p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/" rel="prev" title="病毒_Win_DLL+导出表">
+      <i class="fa fa-chevron-left"></i> 病毒_Win_DLL+导出表
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/20/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/" rel="next" title="病毒_Win_指令Patch实现和重定位表">
+      病毒_Win_指令Patch实现和重定位表 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Patch%E7%9A%84%E6%A0%B8%E5%BF%83%E9%97%AE%E9%A2%98%E5%92%8C%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="nav-number">1.</span> <span class="nav-text">Patch的核心问题和解决思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.</span> <span class="nav-text">核心问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="nav-number">1.2.</span> <span class="nav-text">解决思路</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E8%B0%83%E7%94%A8%E5%AF%BC%E5%85%A5%E5%87%BD%E6%95%B0%E7%9A%84%E6%8C%87%E4%BB%A4patch"><span class="nav-number">2.</span> <span class="nav-text">对调用导入函数的指令patch</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">函数调用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BC%E5%85%A5%E8%A1%A8"><span class="nav-number">2.2.</span> <span class="nav-text">导入表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%A1%AB%E5%86%99%E5%AF%BC%E5%85%A5%E8%A1%A8"><span class="nav-number">2.3.</span> <span class="nav-text">如何填写导入表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#INT%E8%A1%A8"><span class="nav-number">2.3.1.</span> <span class="nav-text">INT表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IAT%E8%A1%A8"><span class="nav-number">2.3.2.</span> <span class="nav-text">IAT表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#INT%E4%B8%8EIAT"><span class="nav-number">2.3.3.</span> <span class="nav-text">INT与IAT</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IAT%E8%A1%A8%E5%88%9D%E5%A7%8B%E5%8C%96%E7%AE%97%E6%B3%95"><span class="nav-number">2.3.4.</span> <span class="nav-text">IAT表初始化算法</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E5%85%88%E7%BB%91%E5%AE%9A"><span class="nav-number">2.4.</span> <span class="nav-text">预先绑定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#patch%E6%84%9F%E6%9F%93"><span class="nav-number">2.5.</span> <span class="nav-text">patch感染</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

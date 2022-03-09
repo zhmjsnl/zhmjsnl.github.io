@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="框架寄生机制  文件型病毒  头插入、尾插入、逆插入  面向文件系统的病毒  引导性病毒">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_DOS_病毒寄生">
+<meta property="og:url" content="https://wsw8.online/2021/05/08/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="框架寄生机制  文件型病毒  头插入、尾插入、逆插入  面向文件系统的病毒  引导性病毒">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210509192438009.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210509194514539.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210509200017110.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151224438.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510152355492.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510152516043.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151650600.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151716651.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151738657.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151754026.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151818941.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510152817598.png">
+<meta property="article:published_time" content="2021-05-08T12:22:56.000Z">
+<meta property="article:modified_time" content="2021-05-10T08:30:13.032Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210509192438009.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/08/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_DOS_病毒寄生 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/08/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_DOS_病毒寄生
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-08 20:22:56" itemprop="dateCreated datePublished" datetime="2021-05-08T20:22:56+08:00">2021-05-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-10 16:30:13" itemprop="dateModified" datetime="2021-05-10T16:30:13+08:00">2021-05-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="框架"><a href="#框架" class="headerlink" title="框架"></a>框架</h2><p>寄生机制</p>
+<blockquote>
+<p>文件型病毒</p>
+<blockquote>
+<p>头插入、尾插入、逆插入</p>
+</blockquote>
+<p>面向文件系统的病毒</p>
+<blockquote>
+<p>引导性病毒</p>
+</blockquote>
+</blockquote>
+<span id="more"></span>
+
+<p>执行机制</p>
+<blockquote>
+<p>对于com文件，头，尾，逆插入寄生都相当于入口点修改，可以执行</p>
+<p>中断替换</p>
+</blockquote>
+<h2 id="debug使用"><a href="#debug使用" class="headerlink" title="debug使用"></a>debug使用</h2><ol>
+<li>-u 反汇编</li>
+<li>-g xxx 运行到xxx中断</li>
+<li>-t 单步</li>
+<li>-r 查看寄存器</li>
+<li>-d 查看内存</li>
+<li>-e 地址 值 修改内存</li>
+<li>-a 地址 添加指令</li>
+</ol>
+<h2 id="病毒的寄生机制"><a href="#病毒的寄生机制" class="headerlink" title="病毒的寄生机制"></a>病毒的寄生机制</h2><h3 id="头插入"><a href="#头插入" class="headerlink" title="头插入"></a>头插入</h3><h4 id="DOS环境下四种基本可执行文件格式"><a href="#DOS环境下四种基本可执行文件格式" class="headerlink" title="DOS环境下四种基本可执行文件格式"></a>DOS环境下四种基本可执行文件格式</h4><ol>
+<li><p>批处理文件 .bat结尾</p>
+</li>
+<li><p>设备驱动文件 .sys结尾</p>
+</li>
+<li><p>纯代码文件 .com结尾</p>
+<blockquote>
+<p>没有文件头</p>
+<p>缺省从0x100H处开始执行</p>
+<p>没有重定位项</p>
+<p>所有代码和数据控制在64k以内</p>
+</blockquote>
+</li>
+<li><p>EXE文件 .exe结尾</p>
+<blockquote>
+<p>文件以英文字母MZ开头</p>
+<p>有一个文件头，指出每个段定义等信息</p>
+<p>摆脱了代码大小不得超过64k的限制</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="大致思路"><a href="#大致思路" class="headerlink" title="大致思路"></a>大致思路</h4><p>将病毒代码放到正常代码头部合成新的文件</p>
+<h4 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h4><ol>
+<li>病毒代码的ret导致直接退出，删掉ret</li>
+<li>删掉ret后执行错误，发现是由于将数据区当指令执行了，利用JMP指令跳过数据区</li>
+<li>正常执行后发现正常代码打印的字符串不对，发现是由于加载偏差，于是在病毒区后面增加代码使其复制正常代码到原来的位置进行覆盖，然后跳转到开始</li>
+<li>在覆盖字符不多的情况下可以正常执行，换作大程序发现程序直接挂掉，发现是由于覆盖的代码将进行覆盖的指令都给覆盖了，于是我们需要保护拷贝指令，将拷贝指令复制到最后面，执行完成后跳转到开始</li>
+</ol>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol>
+<li>多次利用JMP指令控制指令的执行</li>
+<li>处理预期加载地址与实际加载地址不同的问题，处理覆盖的问题</li>
+<li>利用代码拷贝来创造寄生空间或还原现场</li>
+</ol>
+<h3 id="尾插入"><a href="#尾插入" class="headerlink" title="尾插入"></a>尾插入</h3><h4 id="大致思路-1"><a href="#大致思路-1" class="headerlink" title="大致思路"></a>大致思路</h4><p>用JMP指令覆盖正常程序的前3个字节使其跳转到病毒代码，再将覆盖的代码写到病毒代码的最后，执行完病毒代码后将尾部保存的原字节内容覆盖回去再跳转回去执行就可</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210509192438009.png" alt="image-20210509192438009"></p>
+<h4 id="自定位代码"><a href="#自定位代码" class="headerlink" title="自定位代码"></a>自定位代码</h4><p>但是有一些问题，比如病毒代码的加载偏差，在头插入中我们采用将正常代码拷贝到原来位置来消除加载偏差的，可是如果我们拷贝病毒代码，那就成了头插入了，于是我们要想办法获得加载偏差的值然后在病毒代码中校正，这就是自定位技术（重定位技术）</p>
+<ol>
+<li><p>首先我们想到利用MOV AX，IP来获取IP寄存器的值，可是没有指令有权限访问IP寄存器</p>
+</li>
+<li><p>但是CALL指令很特殊，它会将<strong>下一条</strong>指令的IP压栈后跳转执行，于是我们可以利用这个机制获得加载偏差</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210509194514539.png" alt="image-20210509194514539"></p>
+</li>
+</ol>
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210509200017110.png" alt="image-20210509200017110"></p>
+<h3 id="逆差入"><a href="#逆差入" class="headerlink" title="逆差入"></a>逆差入</h3><p>定义：逆插入感染，实际就是一部分代码在原程序的头部，一部分在尾部，将整个原来的程序给包裹起来</p>
+<h4 id="图示"><a href="#图示" class="headerlink" title="图示"></a>图示</h4><p>大致思路：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151224438.png" alt="image-20210510151224438"></p>
+<p>程序设计：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510152355492.png" alt="image-20210510152355492"></p>
+<p>感染代码：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510152516043.png" alt="image-20210510152516043"></p>
+<h4 id="操作"><a href="#操作" class="headerlink" title="操作"></a>操作</h4><ol>
+<li>逆差入需要拷贝多次（normal后移、头粘贴、尾粘贴）</li>
+<li>用到了DOS读写文件的中断调用</li>
+</ol>
+<h4 id="DOS下的文件读写"><a href="#DOS下的文件读写" class="headerlink" title="DOS下的文件读写"></a>DOS下的文件读写</h4><p>类似C语言的fopen、fread、fwrite、fseek、fclose</p>
+<p>打开文件：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151650600.png" alt="image-20210510151650600"></p>
+<p>读文件：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151716651.png" alt="image-20210510151716651"></p>
+<p>关闭文件：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151738657.png" alt="image-20210510151738657"></p>
+<p>写文件：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151754026.png" alt="image-20210510151754026"></p>
+<p>移动文件指针：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510151818941.png" alt="image-20210510151818941"></p>
+<blockquote>
+<p>以上代码将文件指针放在尾部，设置移动的偏移量CX：DX为0，就是不移动，那么调用21h后，得到的新偏移量就是文件大小，也就是AX中存放文件大小</p>
+</blockquote>
+<h4 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h4><p><img src="/images/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/image-20210510152817598.png" alt="image-20210510152817598"></p>
+<blockquote>
+<p>应该是从尾至头拷贝，防止覆盖</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/08/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="prev" title="病毒_基础_硬盘数据结构">
+      <i class="fa fa-chevron-left"></i> 病毒_基础_硬盘数据结构
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/10/%E7%97%85%E6%AF%92-DOS-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8/" rel="next" title="病毒_DOS_函数调用">
+      病毒_DOS_函数调用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6"><span class="nav-number">1.</span> <span class="nav-text">框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debug%E4%BD%BF%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">debug使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E7%9A%84%E5%AF%84%E7%94%9F%E6%9C%BA%E5%88%B6"><span class="nav-number">3.</span> <span class="nav-text">病毒的寄生机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%B4%E6%8F%92%E5%85%A5"><span class="nav-number">3.1.</span> <span class="nav-text">头插入</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#DOS%E7%8E%AF%E5%A2%83%E4%B8%8B%E5%9B%9B%E7%A7%8D%E5%9F%BA%E6%9C%AC%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F"><span class="nav-number">3.1.1.</span> <span class="nav-text">DOS环境下四种基本可执行文件格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%A7%E8%87%B4%E6%80%9D%E8%B7%AF"><span class="nav-number">3.1.2.</span> <span class="nav-text">大致思路</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98"><span class="nav-number">3.1.3.</span> <span class="nav-text">一些问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.1.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%BE%E6%8F%92%E5%85%A5"><span class="nav-number">3.2.</span> <span class="nav-text">尾插入</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%A7%E8%87%B4%E6%80%9D%E8%B7%AF-1"><span class="nav-number">3.2.1.</span> <span class="nav-text">大致思路</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%BD%8D%E4%BB%A3%E7%A0%81"><span class="nav-number">3.2.2.</span> <span class="nav-text">自定位代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93-1"><span class="nav-number">3.2.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%86%E5%B7%AE%E5%85%A5"><span class="nav-number">3.3.</span> <span class="nav-text">逆差入</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%BE%E7%A4%BA"><span class="nav-number">3.3.1.</span> <span class="nav-text">图示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C"><span class="nav-number">3.3.2.</span> <span class="nav-text">操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DOS%E4%B8%8B%E7%9A%84%E6%96%87%E4%BB%B6%E8%AF%BB%E5%86%99"><span class="nav-number">3.3.3.</span> <span class="nav-text">DOS下的文件读写</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BE%8B%E9%A2%98"><span class="nav-number">3.3.4.</span> <span class="nav-text">例题</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

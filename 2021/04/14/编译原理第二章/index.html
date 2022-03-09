@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="数据类型的分类内部类型 优点：  基本表示的不可见性 编译时能检查变量使用的正确性 编译时可以确定无二义的操作 精度控制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="编译原理第二章">
+<meta property="og:url" content="https://wsw8.online/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="数据类型的分类内部类型 优点：  基本表示的不可见性 编译时能检查变量使用的正确性 编译时可以确定无二义的操作 精度控制">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210414193241257.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411152405051.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411155756373.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411160449254.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411161113371.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411161638987.png">
+<meta property="article:published_time" content="2021-04-14T10:49:14.000Z">
+<meta property="article:modified_time" content="2021-05-10T08:28:43.323Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="编译原理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210414193241257.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>编译原理第二章 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          编译原理第二章
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-04-14 18:49:14" itemprop="dateCreated datePublished" datetime="2021-04-14T18:49:14+08:00">2021-04-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-10 16:28:43" itemprop="dateModified" datetime="2021-05-10T16:28:43+08:00">2021-05-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">编译原理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="数据类型的分类"><a href="#数据类型的分类" class="headerlink" title="数据类型的分类"></a>数据类型的分类</h2><h3 id="内部类型"><a href="#内部类型" class="headerlink" title="内部类型"></a>内部类型</h3><blockquote>
+<p>优点：</p>
+<ol>
+<li>基本表示的不可见性</li>
+<li>编译时能检查变量使用的正确性</li>
+<li>编译时可以确定无二义的操作</li>
+<li>精度控制</li>
+</ol>
+</blockquote>
+<span id="more"></span>
+
+<h3 id="用户定义类型"><a href="#用户定义类型" class="headerlink" title="用户定义类型"></a>用户定义类型</h3><blockquote>
+<ol>
+<li>有限映像：<br>定义：从定义域类型DT值的有限集合，到值域类型RT值的有限集合的函数（映射）<br>eg：array[1..50] of char 中整数1至50到字符集的有限映像</li>
+<li>序列：<br>定义：任意多个数据项组成，数据项称为序列的成分，且<strong>类型相同</strong></li>
+<li>判定或：<br>定义：可以选择不同成员的构造机制<br>eg：PASCAL的变体记录、C的联合<br>eg：<br>变体记录定义如下：</li>
+</ol>
+<figure class="highlight pascal"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> dept=(house,sports,drugs,food,liquor);</span><br><span class="line">month=<span class="number">1</span>..<span class="number">12</span>;</span><br><span class="line">item=<span class="keyword">record</span></span><br><span class="line">    price:real;</span><br><span class="line">    <span class="keyword">case</span> available:boolean <span class="keyword">of</span></span><br><span class="line">        true:(amount:integer;  </span><br><span class="line">            where:dept);</span><br><span class="line">        false:(month_expected:month)</span><br><span class="line"> <span class="keyword">end</span>;</span><br></pre></td></tr></table></figure>
+
+<p>实现代码如下：</p>
+<figure class="highlight pascal"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span>  i1,i2:item:</span><br><span class="line">i1.price:=<span class="number">5.24</span>;i1.available:=true;</span><br><span class="line">i1.amount:=<span class="number">29</span>;i1.where:=liquor;</span><br><span class="line">i2.price:=<span class="number">324.99</span>;i2.available:=false;</span><br><span class="line">i2.month_expect:=<span class="number">8</span>;</span><br></pre></td></tr></table></figure>
+
+<p>则空间分配情况如下：</p>
+<center>i1</center>
+
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>price</td>
+<td>5.24</td>
+</tr>
+<tr>
+<td>available</td>
+<td>true</td>
+</tr>
+<tr>
+<td>amount</td>
+<td>29</td>
+</tr>
+<tr>
+<td>where</td>
+<td>liquor</td>
+</tr>
+</tbody></table>
+<center>i2</center>
+
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>price</td>
+<td>324.99</td>
+</tr>
+<tr>
+<td>available</td>
+<td>false</td>
+</tr>
+<tr>
+<td>month_expected</td>
+<td>8</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<ol start="4">
+<li>幂集<br>定义：类型T的元素的所有子集的集合，T为基类型</li>
+</ol>
+</blockquote>
+<h2 id="C语言的数据类型"><a href="#C语言的数据类型" class="headerlink" title="C语言的数据类型"></a>C语言的数据类型</h2><p><img src="/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210414193241257.png" alt="image-20210414193241257"></p>
+<h3 id="非结构类型"><a href="#非结构类型" class="headerlink" title="非结构类型"></a>非结构类型</h3><ol>
+<li><p>内部类型<br>整型：int、short、long、unsigned<br>浮点型：float、double<br>字符型：char（有限字符集的元素）</p>
+</li>
+<li><p>用户定义的非结构类型<br>枚举：enum</p>
+</li>
+</ol>
+<h3 id="结构类型"><a href="#结构类型" class="headerlink" title="结构类型"></a>结构类型</h3><ol>
+<li><p>数组</p>
+</li>
+<li><p>结构struct</p>
+</li>
+<li><p>联合union（C的联合是不安全的）</p>
+</li>
+<li><p>文件FILE</p>
+</li>
+<li><p>指针</p>
+</li>
+<li><p>空类型void</p>
+</li>
+</ol>
+<blockquote>
+<p>不允许定义空类型变量，可以定义空类型指针变量</p>
+</blockquote>
+<h2 id="类型检查"><a href="#类型检查" class="headerlink" title="类型检查"></a>类型检查</h2><p>定义：对数据的操作和对应的类型是否匹配的一致性检查<br>eg：非法运算、赋值运算、形参实参类型是否匹配</p>
+<ol>
+<li>静态检查和动态检查</li>
+</ol>
+<blockquote>
+<p>静态检查使程序更有效<br>动态检查是编程更方便，但是影响了可靠性且降低了执行效率</p>
+</blockquote>
+<h2 id="语言分类"><a href="#语言分类" class="headerlink" title="语言分类"></a>语言分类</h2><blockquote>
+<p>无类型语言：没有数据类型<br>eg：函数式语言（FP）、泛函程序设计语言（FFP）<br>弱类型语言：类型检查全部或部分在运行时完成<br>eg：PASCAL<br>强类型语言：类型检查都在编译时完成<br>eg：C、ADA</p>
+</blockquote>
+<h2 id="实现模型"><a href="#实现模型" class="headerlink" title="实现模型"></a>实现模型</h2><p>在程序中，数据由常量或变量表示<br>在实现模型中，数据由描述符（描述数据对象的属性）和数据对象（存储区及其内容）表示</p>
+<blockquote>
+<ol>
+<li>内部类型和用户定义的非结构类型：描述符一般由类型描述和指针组成<br><strong>多个变量的描述符形成变量名表</strong><br>eg：</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> numb;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411152405051.png" alt="image-20210411152405051"></p>
+<ol start="2">
+<li>结构类型</li>
+</ol>
+<ul>
+<li>笛卡尔积<br>各成分按顺序存储，每个成分占整数个存储单元<br>描述符包含：类型名、构造符、若干三元式（选择符名、域类型、指针）（每个域对应一个三元式）<br>eg：</li>
+</ul>
+<figure class="highlight pascal"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> t=recode a:real;</span><br><span class="line">              b:integer;</span><br><span class="line">       <span class="keyword">end</span>;</span><br><span class="line"><span class="keyword">var</span> x:t;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411155756373.png" alt="image-20210411155756373"></p>
+<ul>
+<li>有限映像<br>为每一成分分配整数个可编址的存储单元<br>描述符包括：类型名、构造符、<strong>定义域的基类型</strong>、下界、上界、成分类型、（每个成分占）单元个数、<strong>首地址</strong><br>eg：</li>
+</ul>
+<figure class="highlight pascal"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> a=<span class="keyword">array</span>[<span class="number">1</span>..<span class="number">10</span>] <span class="keyword">of</span> real;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411160449254.png" alt="image-20210411160449254"></p>
+<ul>
+<li>序列<br>可变长串的表示：静态描述符+动态描述符+堆</li>
+</ul>
+<p><img src="/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411161113371.png" alt="image-20210411161113371"></p>
+<ul>
+<li>判定或<br>pascal的变体记录：描述符、数据对象、case表、若干变体描述符</li>
+</ul>
+<figure class="highlight pascal"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> v=<span class="keyword">record</span> a:integer;</span><br><span class="line">              <span class="keyword">case</span> b:boolean <span class="keyword">of</span></span><br><span class="line">                   true:(c:integer);</span><br><span class="line">                   false:(d:integer;</span><br><span class="line">                          e:real)</span><br><span class="line">       <span class="keyword">end</span>;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%BA%8C%E7%AB%A0/image-20210411161638987.png" alt="image-20210411161638987"></p>
+<ul>
+<li><p>指针</p>
+<p>表示与内部类型相同只是其值为地址</p>
+<p>指针指向的匿名数据对象分配在堆上</p>
+</li>
+<li><p><strong>编译时所有的描述符保存在一张表中以便编译时使用，甚至有些描述符要保存到运行阶段（数组），并且存储在描述符中的属性可能随运行而变化。</strong></p>
+</li>
+</ul>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/" rel="tag"># 编译原理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%B8%80%E7%AB%A0/" rel="prev" title="编译原理第一章">
+      <i class="fa fa-chevron-left"></i> 编译原理第一章
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/04/14/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%B8%89%E7%AB%A0/" rel="next" title="编译原理第三章">
+      编译原理第三章 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">1.</span> <span class="nav-text">数据类型的分类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E9%83%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">内部类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%AE%9A%E4%B9%89%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">用户定义类型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#C%E8%AF%AD%E8%A8%80%E7%9A%84%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">C语言的数据类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%9E%E7%BB%93%E6%9E%84%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.1.</span> <span class="nav-text">非结构类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.2.</span> <span class="nav-text">结构类型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5"><span class="nav-number">3.</span> <span class="nav-text">类型检查</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AD%E8%A8%80%E5%88%86%E7%B1%BB"><span class="nav-number">4.</span> <span class="nav-text">语言分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">实现模型</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

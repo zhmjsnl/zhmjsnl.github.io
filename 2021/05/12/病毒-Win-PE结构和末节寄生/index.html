@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="PE格式在Win32位平台可执行文件命名为可移植的可执行文件（Portable Executable File），该文件的格式就是PE格式 在Win32系统中，常见的EXE，DLL，SYS，COM等可执行文件都是PE文件">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_Win_PE结构和末节寄生">
+<meta property="og:url" content="https://wsw8.online/2021/05/12/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="PE格式在Win32位平台可执行文件命名为可移植的可执行文件（Portable Executable File），该文件的格式就是PE格式 在Win32系统中，常见的EXE，DLL，SYS，COM等可执行文件都是PE文件">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517151959406.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517153940694.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517153120815.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517154415235.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517155329619.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210519083535334.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210519085921966.png">
+<meta property="article:published_time" content="2021-05-12T12:18:01.000Z">
+<meta property="article:modified_time" content="2021-05-19T01:11:34.934Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517151959406.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/12/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_Win_PE结构和末节寄生 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/12/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_Win_PE结构和末节寄生
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-12 20:18:01" itemprop="dateCreated datePublished" datetime="2021-05-12T20:18:01+08:00">2021-05-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-19 09:11:34" itemprop="dateModified" datetime="2021-05-19T09:11:34+08:00">2021-05-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="PE格式"><a href="#PE格式" class="headerlink" title="PE格式"></a>PE格式</h2><p>在Win32位平台可执行文件命名为可移植的可执行文件（Portable Executable File），该文件的格式就是PE格式</p>
+<p>在Win32系统中，常见的EXE，DLL，SYS，COM等可执行文件都是PE文件</p>
+<span id="more"></span>
+
+<h3 id="图示"><a href="#图示" class="headerlink" title="图示"></a>图示</h3><p><img src="/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517151959406.png" alt="image-20210517151959406"></p>
+<h3 id="映像"><a href="#映像" class="headerlink" title="映像"></a>映像</h3><ol>
+<li>PE文件的加载要完成虚拟地址（内存）和PE文件（硬盘）之间的映射关系，所以又被称为映像文件</li>
+<li>当真正执行某个内存页的指令或访问一个页的数据时，这个页面才会真正读入内存</li>
+<li>所以文件装入速度与文件大小关系不大</li>
+<li>注意区分文件位置与虚拟地址与相对虚拟地址</li>
+</ol>
+<h3 id="相对虚拟地址（RVA）"><a href="#相对虚拟地址（RVA）" class="headerlink" title="相对虚拟地址（RVA）"></a>相对虚拟地址（RVA）</h3><ol>
+<li><p>虚拟地址，即我们前面提到的逻辑地址，指的是内存中的地址（注意和硬盘上文件中的位置相区分）</p>
+</li>
+<li><p>相对地址，即相对PE文件加载到内存后占用的最开始的那个内存单元的逻辑地址（基地址）</p>
+</li>
+<li><p>区分RVA和FOA</p>
+<blockquote>
+<p>RVA：内存中的相对位置，相对的是加载到内存的基地址</p>
+<p>FOA：文件中的相对位置，相对的是文件的开始位置（即0）</p>
+<p>在文件中，一个节往往按512B（200H）的粒度对齐</p>
+<p>在内存中，一个节通常按4096（1000H）的粒度对齐</p>
+<p>所以内存的RVA和文件的FOA通常是不一致的</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517153940694.png" alt="image-20210517153940694"></p>
+<p>（由于装载时前面的一般不动，DOS部分、PE文件头部分、节表部分、和第一个节的RVA和FOA通常一致）</p>
+</blockquote>
+</li>
+<li><p>图示</p>
+<blockquote>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517153120815.png" alt="image-20210517153120815"></p>
+<p>在图示中，基地址是0x00400000，.text节的RVA是0x1560，VA是0x00401560</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="DOS头部分"><a href="#DOS头部分" class="headerlink" title="DOS头部分"></a>DOS头部分</h3><p>图示，仅供参考无需记忆：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517154415235.png" alt="image-20210517154415235"></p>
+<p>头部的e_magic，就是两个字符MZ，代表DOS文件<br>最后一个字段e_lfanew是偏移量，就是文件开始到PE文件头（NT头）的偏移量</p>
+<h3 id="PE头"><a href="#PE头" class="headerlink" title="PE头"></a>PE头</h3><p>包含3个部分</p>
+<ol>
+<li>PE文件标志（Signature）</li>
+<li>映像文件头（IMAGE_FILE_HEADER）</li>
+<li>可选映像文件头（IMAGE_OPTIONAL_HEADER32）</li>
+</ol>
+<h4 id="PE文件标志"><a href="#PE文件标志" class="headerlink" title="PE文件标志"></a>PE文件标志</h4><p>两个字节为PE表明是PE格式文件</p>
+<p>故而判断文件是否为PE格式可以通过：</p>
+<ol>
+<li>先判断文件头2个字节是否为MZ</li>
+<li>判断NT头（PE头）的Signature是否为PE</li>
+</ol>
+<h4 id="映像文件头"><a href="#映像文件头" class="headerlink" title="映像文件头"></a>映像文件头</h4><p><img src="/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210517155329619.png" alt="image-20210517155329619"></p>
+<p>对病毒来说，可能需要用到NumberOfSections</p>
+<h4 id="可选映像头"><a href="#可选映像头" class="headerlink" title="可选映像头"></a>可选映像头</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">Option Header </span><br><span class="line">TImage_Optional_Header32 = record</span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Standard fields.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    Magic: Word;</span><br><span class="line">    MajorLinkerVersion: Byte;</span><br><span class="line">    MinorLinkerVersion: Byte;</span><br><span class="line">    SizeOfCode: Cardinal;</span><br><span class="line">    SizeOfInitializedData: Cardinal;</span><br><span class="line">    SizeOfUninitializedData: Cardinal;</span><br><span class="line">    AddressOfEntryPoint: Cardinal;         <span class="comment">//代码入口RVA，第一条指令的RAV</span></span><br><span class="line">    BaseOfCode: Cardinal;</span><br><span class="line">    BaseOfData: Cardinal;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// NT additional fields.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    ImageBase: Cardinal;			<span class="comment">//载入程序的首选RAV</span></span><br><span class="line">    SectionAlignment: Cardinal;		<span class="comment">//节在内存中对齐方式</span></span><br><span class="line">    FileAlignment: Cardinal;			<span class="comment">//节在文件中对齐方式</span></span><br><span class="line">    MajorOperatingSystemVersion: Word;</span><br><span class="line">    MinorOperatingSystemVersion: Word;</span><br><span class="line">    MajorImageVersion: Word;</span><br><span class="line">    MinorImageVersion: Word;</span><br><span class="line">    MajorSubsystemVersion: Word;</span><br><span class="line">    MinorSubsystemVersion: Word;</span><br><span class="line">    Win32VersionValue: Cardinal;</span><br><span class="line">    SizeOfImage: Cardinal;	       <span class="comment">//内存中整个PE文件的总大小，按内存对齐</span></span><br><span class="line">    SizeOfHeaders: Cardinal;	</span><br><span class="line">    CheckSum: Cardinal;</span><br><span class="line">    Subsystem: Word;</span><br><span class="line">    DllCharacteristics: Word;</span><br><span class="line">    SizeOfStackReserve: Cardinal;</span><br><span class="line">    SizeOfStackCommit: Cardinal;</span><br><span class="line">    SizeOfHeapReserve: Cardinal;</span><br><span class="line">    SizeOfHeapCommit: Cardinal;</span><br><span class="line">    LoaderFlags: Cardinal;</span><br><span class="line">    NumberOfRvaAndSizes: Cardinal;		<span class="comment">//数据目录的项数</span></span><br><span class="line">    DataDirectory: <span class="built_in">array</span>[<span class="number">0.</span>.IMAGE_NUMBEROF_DIRECTORY_ENTRIES - <span class="number">1</span>] of        </span><br><span class="line">                                                               TImage_Data_Directory;	<span class="comment">//数据目录表</span></span><br><span class="line">  end;</span><br></pre></td></tr></table></figure>
+
+<p>上述注释为可能用到的字段，<strong>“AddressOfEntryPoint”很关键</strong></p>
+<h2 id="利用入口RVA实现病毒执行"><a href="#利用入口RVA实现病毒执行" class="headerlink" title="利用入口RVA实现病毒执行"></a>利用入口RVA实现病毒执行</h2><h3 id="修改入口地址对应指令"><a href="#修改入口地址对应指令" class="headerlink" title="修改入口地址对应指令"></a>修改入口地址对应指令</h3><ol>
+<li><p>用PEView定位到AddressOfEntryPoint</p>
+</li>
+<li><p>用UE定位到AddressOfEntryPoint的值位置（注意值是RVA）</p>
+</li>
+<li><p>通过RVA找到文件的FOA</p>
+<blockquote>
+<p>入口点的RVA（AddressOfEntryPoint）- 节的RVA &#x3D;</p>
+<p>入口点的FOA - 节的起始文件位置（PointerToRawData）</p>
+</blockquote>
+</li>
+<li><p>用eb 02 90 90替代原来内容，该指令汇编为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">jmp aa</span><br><span class="line">nop</span><br><span class="line">nop</span><br><span class="line">aa:</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>用OD启动修改后程序，OD将停在第一条指令，观察第一条指令是eb 02 90 90</p>
+</li>
+<li><p>成功</p>
+</li>
+<li><p>注：程序的ImageBase+AddressOfEntryPoint就是入口点地址</p>
+</li>
+</ol>
+<h3 id="直接修改入口点地址"><a href="#直接修改入口点地址" class="headerlink" title="直接修改入口点地址"></a>直接修改入口点地址</h3><ol>
+<li>找到AddressOfEntryPoint字段在文件中的偏移</li>
+<li>用UE修改就好</li>
+</ol>
+<h3 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h3><ol>
+<li>下列哪个字段不在PE文件的可选头中（    ）<br>A．入口点地址<br>B．文件对齐大小<br>C．子系统<br>D．节表</li>
+</ol>
+<p>参考答案：D</p>
+<p>解析：由前面的图知道，节表是在PE文件头后面的</p>
+<h2 id="病毒加载到内存的问题"><a href="#病毒加载到内存的问题" class="headerlink" title="病毒加载到内存的问题"></a>病毒加载到内存的问题</h2><h3 id="节表"><a href="#节表" class="headerlink" title="节表"></a>节表</h3><ol>
+<li>节表紧跟在PE文件头后面，节表中每一个结构ImageSectionHeader（28H）都对应一个节，其中，SizeOfRawData描述了对应节的文件大小，VirtualSize描述了加载到内存的大小（两者可能不同，文件大小可以大于也可以小于内存大小，小于时将在内存补0）</li>
+<li>在PE文件头的可选映像头中，SizeOfImage给出了整个程序包括所有头部加载到内存后的大小，其大小是SectionAlignment的整数倍（SectionAlignment是内存对齐的粒度、FileAlignment是文件对齐的粒度）</li>
+<li>简单说，就是PE文件总大小和每个节的大小都有参数</li>
+</ol>
+<p>图示：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210519083535334.png" alt="image-20210519083535334"></p>
+<h2 id="末节寄生"><a href="#末节寄生" class="headerlink" title="末节寄生"></a>末节寄生</h2><h3 id="思想"><a href="#思想" class="headerlink" title="思想"></a>思想</h3><ol>
+<li>如果该节内存大小&lt;文件大小，我们就在文件中将指令加载到该节的多余部分（对齐后的空洞）</li>
+<li>然后修改节表SectionHeader中的VirtualSize字段（加载到内存的字节数）为修改后的大小，而对齐后的文件大小SizeOfRowData保持不变</li>
+<li>注意，有时exe最后一个字节后有一些调试信息，但它不会被加载到内存，这也许就是SizeOfImage的意义，它阻止尾部多余信息进入内存</li>
+</ol>
+<h3 id="具体操作"><a href="#具体操作" class="headerlink" title="具体操作"></a>具体操作</h3><ol>
+<li>首先找到最后一个节在文件中的位置，即其节表项中PointerToRawData字段</li>
+<li>找到节中的寄生位置，就是VirtualSize字段后面</li>
+<li>找到在文件中的寄生位置，PointerToRawData+VirtualSize</li>
+<li>用UE在文件偏移到该处进行修改</li>
+<li>修改最后一个节表中的VirtualSize</li>
+<li>计算SizeOfImage&#x3D;程序大小&#x2F;SectionOfImage并向上取整，查看是否需要修改</li>
+<li>修改AddressOfEntryPoint为新的程序入口RVA</li>
+</ol>
+<h3 id="文件长度变大"><a href="#文件长度变大" class="headerlink" title="文件长度变大"></a>文件长度变大</h3><ol>
+<li>在reloc节原VirutalSize后添加JMP xx xx，在DOS部分已知机器码偏移量为两字节E9 xx xx</li>
+<li>在reloc节后添加两个NOP指令</li>
+<li>修改reloc节头的SizeOfRawData，加一个FileAlignment（1000h），为2000h</li>
+<li>修改reloc节头的VirtualSize为原SizeOfRawData+2(两个nop) ，现在NOP才是实际结尾</li>
+<li>修改可选映像头的SizeOfImage &#x3D; (relocRVA+新VirutalSize)除以SectionAlign取上整</li>
+<li>在NOP后手动增加1000h-2个字节，内容不论，为对齐后填充内容，以前是编译器自动填充</li>
+<li>修改入口点RAV（AddressOfEntryPoint）</li>
+</ol>
+<p>图示：</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-Win-PE%E7%BB%93%E6%9E%84%E5%92%8C%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F/image-20210519085921966.png" alt="image-20210519085921966"></p>
+<h3 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h3><ol>
+<li>关于PE文件病毒，下列说法不正确的是（       ）<br>A. 需要对PE文件头的某些字段进行修改，保证感染后的PE文件合法<br>B. PE文件感染必然会增加PE文件的大小<br>C. 病毒可以通过修改PE文件入口点的值或者入口点处的指令来获得执行机会<br>D. 病毒可以将自身且分为多段，分别插入到PE文件各节的空洞中</li>
+</ol>
+<p>参考答案：B</p>
+<p>解析：PE文件感染有的方式是不改变PE文件大小的</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/12/%E7%97%85%E6%AF%92-Win-%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80/" rel="prev" title="病毒_Win_虚拟地址">
+      <i class="fa fa-chevron-left"></i> 病毒_Win_虚拟地址
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E7%97%85%E6%AF%92-Win-%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" rel="next" title="病毒_Win_末节寄生程序设计">
+      病毒_Win_末节寄生程序设计 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#PE%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">PE格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E7%A4%BA"><span class="nav-number">1.1.</span> <span class="nav-text">图示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%A0%E5%83%8F"><span class="nav-number">1.2.</span> <span class="nav-text">映像</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%AF%B9%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%EF%BC%88RVA%EF%BC%89"><span class="nav-number">1.3.</span> <span class="nav-text">相对虚拟地址（RVA）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DOS%E5%A4%B4%E9%83%A8%E5%88%86"><span class="nav-number">1.4.</span> <span class="nav-text">DOS头部分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PE%E5%A4%B4"><span class="nav-number">1.5.</span> <span class="nav-text">PE头</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#PE%E6%96%87%E4%BB%B6%E6%A0%87%E5%BF%97"><span class="nav-number">1.5.1.</span> <span class="nav-text">PE文件标志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%98%A0%E5%83%8F%E6%96%87%E4%BB%B6%E5%A4%B4"><span class="nav-number">1.5.2.</span> <span class="nav-text">映像文件头</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%AF%E9%80%89%E6%98%A0%E5%83%8F%E5%A4%B4"><span class="nav-number">1.5.3.</span> <span class="nav-text">可选映像头</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E5%85%A5%E5%8F%A3RVA%E5%AE%9E%E7%8E%B0%E7%97%85%E6%AF%92%E6%89%A7%E8%A1%8C"><span class="nav-number">2.</span> <span class="nav-text">利用入口RVA实现病毒执行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E5%85%A5%E5%8F%A3%E5%9C%B0%E5%9D%80%E5%AF%B9%E5%BA%94%E6%8C%87%E4%BB%A4"><span class="nav-number">2.1.</span> <span class="nav-text">修改入口地址对应指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B4%E6%8E%A5%E4%BF%AE%E6%94%B9%E5%85%A5%E5%8F%A3%E7%82%B9%E5%9C%B0%E5%9D%80"><span class="nav-number">2.2.</span> <span class="nav-text">直接修改入口点地址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B%E9%A2%98"><span class="nav-number">2.3.</span> <span class="nav-text">例题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%97%85%E6%AF%92%E5%8A%A0%E8%BD%BD%E5%88%B0%E5%86%85%E5%AD%98%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.</span> <span class="nav-text">病毒加载到内存的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E8%A1%A8"><span class="nav-number">3.1.</span> <span class="nav-text">节表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AB%E8%8A%82%E5%AF%84%E7%94%9F"><span class="nav-number">4.</span> <span class="nav-text">末节寄生</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%9D%E6%83%B3"><span class="nav-number">4.1.</span> <span class="nav-text">思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E6%93%8D%E4%BD%9C"><span class="nav-number">4.2.</span> <span class="nav-text">具体操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E9%95%BF%E5%BA%A6%E5%8F%98%E5%A4%A7"><span class="nav-number">4.3.</span> <span class="nav-text">文件长度变大</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B%E9%A2%98-1"><span class="nav-number">4.4.</span> <span class="nav-text">例题</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

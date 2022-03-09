@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="流水线的基本概念1. 什么是流水线定义：流水线是利用执行指令操作之间的并行性，实现多条指令重叠执行的技术 1.1 术语流水段（流水级）：完成一条指令的一部分操作 机器周期（流水线周期）：指令沿流水线移动一个流水段的时间。长度取决于最慢的流水段，一般是一个时钟周期（有时是两个时钟周期）。每个流水线周期从指令流水线流出一条指令 吞吐量：单位时间从流水线流出的指令数">
+<meta property="og:type" content="article">
+<meta property="og:title" content="系统结构第三章_流水线">
+<meta property="og:url" content="https://wsw8.online/2021/05/03/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="流水线的基本概念1. 什么是流水线定义：流水线是利用执行指令操作之间的并行性，实现多条指令重叠执行的技术 1.1 术语流水段（流水级）：完成一条指令的一部分操作 机器周期（流水线周期）：指令沿流水线移动一个流水段的时间。长度取决于最慢的流水段，一般是一个时钟周期（有时是两个时钟周期）。每个流水线周期从指令流水线流出一条指令 吞吐量：单位时间从流水线流出的指令数">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504195556778.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504195639490.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504201717892.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504202456375.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203103762.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203333003.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203357254.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203832540.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504204140731.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504204333445.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504211313154.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504211507892.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504212021602.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213234617.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213429124.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213646077.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213806538.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213843051.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504214056065.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505153243028.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505153751740.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505154733078.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155325030.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155531924.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155617247.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155645091.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155812070.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155823248.png">
+<meta property="article:published_time" content="2021-05-03T08:22:30.000Z">
+<meta property="article:modified_time" content="2021-05-10T08:27:03.124Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="系统结构">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504195556778.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/03/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>系统结构第三章_流水线 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/03/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          系统结构第三章_流水线
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-03 16:22:30" itemprop="dateCreated datePublished" datetime="2021-05-03T16:22:30+08:00">2021-05-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-10 16:27:03" itemprop="dateModified" datetime="2021-05-10T16:27:03+08:00">2021-05-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">系统结构</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="流水线的基本概念"><a href="#流水线的基本概念" class="headerlink" title="流水线的基本概念"></a>流水线的基本概念</h2><h3 id="1-什么是流水线"><a href="#1-什么是流水线" class="headerlink" title="1. 什么是流水线"></a>1. 什么是流水线</h3><p>定义：流水线是利用执行指令操作之间的并行性，实现多条指令重叠执行的技术</p>
+<h4 id="1-1-术语"><a href="#1-1-术语" class="headerlink" title="1.1 术语"></a>1.1 术语</h4><p>流水段（流水级）：完成一条指令的一部分操作</p>
+<p>机器周期（流水线周期）：指令沿流水线移动一个流水段的时间。长度取决于最慢的流水段，一般是一个时钟周期（有时是两个时钟周期）。每个流水线周期从指令流水线流出一条指令</p>
+<p>吞吐量：单位时间从流水线流出的指令数</p>
+<span id="more"></span>
+
+<p>流水线设计者：平衡每个流水段的时间，使之等长。因此，每条指令在流水线的平均执行时间在理想情况下为：非流水线机器平均指令执行时间&#x2F;流水线机器段数</p>
+<p>流水线加速比：非流水线机器平均指令执行时间&#x2F;流水线机器平均指令执行时间</p>
+<p>理想情况：流水线加速比&#x3D;流水线机器段数</p>
+<h4 id="1-2-特点"><a href="#1-2-特点" class="headerlink" title="1.2 特点"></a>1.2 特点</h4><ol>
+<li>类似自动装配线</li>
+<li>有多个段（级），段间有<strong>流水线寄存器</strong></li>
+<li>每个流水段执行指令或操作的<strong>不同部分</strong></li>
+<li>流水段之间采用<strong>同步时钟控制</strong></li>
+<li>流水线是开发串行指令流中<strong>并行性</strong>的一种实现技术</li>
+</ol>
+<h3 id="2-RISC指令系统的特点"><a href="#2-RISC指令系统的特点" class="headerlink" title="2. RISC指令系统的特点"></a>2. RISC指令系统的特点</h3><ol>
+<li>所有参加运算的数据来自<strong>寄存器</strong>，结果也写入<strong>寄存器</strong>，寄存器为32&#x2F;64位</li>
+<li>访存只有<code>load</code>和<code>store</code>指令</li>
+<li>指令的类型较少，所有指令<strong>长度相同</strong></li>
+<li>不同指令执行的时钟周期数差别不大</li>
+</ol>
+<h3 id="3-非流水线方式下RISC指令系统的实现"><a href="#3-非流水线方式下RISC指令系统的实现" class="headerlink" title="3. 非流水线方式下RISC指令系统的实现"></a>3. 非流水线方式下RISC指令系统的实现</h3><h4 id="3-1-多周期CPU实现"><a href="#3-1-多周期CPU实现" class="headerlink" title="3.1 多周期CPU实现"></a>3.1 多周期CPU实现</h4><p>假定指令系统是MIPS的一个定点子集：load&#x2F;store指令，ALU指令，转移指令</p>
+<p>一条指令的执行过程最多需要5个时钟周期：CPI&#x3D;5</p>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504195556778.png" alt="image-20210504195556778"></p>
+<p>电路图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504195639490.png" alt="image-20210504195639490"></p>
+<p>上图分析：</p>
+<ol>
+<li><p>IF：Instruction fetch cycle</p>
+<blockquote>
+<ol>
+<li>按照PC内容访问指令存储器，取出指令</li>
+<li>PC+4→NPC，以获取下一条指令地址</li>
+</ol>
+</blockquote>
+</li>
+<li><p>ID：Instruction decode&#x2F;register fetch cycle</p>
+<blockquote>
+<ol>
+<li>指令译码</li>
+<li>读寄存器</li>
+<li>如果需要，则符号扩展指令中的位移量</li>
+</ol>
+</blockquote>
+</li>
+<li><p>EX：Execution（执行）&#x2F;effective address cycle</p>
+<blockquote>
+<ul>
+<li>Load&#x2F;Store：计算数据存储器有效地址</li>
+<li>R-R&#x2F;R-I ALU：执行运算操作</li>
+<li>Branch：做“&#x3D;0？”测试，并置条件，计算目标地址</li>
+</ul>
+</blockquote>
+</li>
+<li><p>MEM：Memory access</p>
+<blockquote>
+<ul>
+<li>Load：送有效地址到数据存储器，取数据</li>
+<li>Store：写ID，读出数据到有效地址单元中</li>
+<li>Branch：如果条件满足计算目标地址送PC；否则NPC送PC</li>
+</ul>
+</blockquote>
+</li>
+<li><p>WB：Write-back cycle</p>
+<blockquote>
+<ul>
+<li>Load or ALU：写结果到寄存器堆</li>
+</ul>
+</blockquote>
+</li>
+</ol>
+<h4 id="3-2-多周期实现的改进"><a href="#3-2-多周期实现的改进" class="headerlink" title="3.2 多周期实现的改进"></a>3.2 多周期实现的改进</h4><ol>
+<li>对于Branch，将“&#x3D;0？”测试和计算可能的转移目标地址提前到ID</li>
+<li>完成ALU指令在MEM cycle</li>
+</ol>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504201717892.png" alt="image-20210504201717892"></p>
+<ol start="3">
+<li><p>改进硬件冗余</p>
+<blockquote>
+<ol>
+<li>ALU可以共享</li>
+<li>数据和指令存储器可以合并</li>
+</ol>
+</blockquote>
+</li>
+</ol>
+<h3 id="4-经典5段流水线RISC处理器"><a href="#4-经典5段流水线RISC处理器" class="headerlink" title="4. 经典5段流水线RISC处理器"></a>4. 经典5段流水线RISC处理器</h3><h4 id="4-1-特点"><a href="#4-1-特点" class="headerlink" title="4.1 特点"></a>4.1 特点</h4><ol>
+<li>5个段构成一个指令流水线，一条指令经过每个段</li>
+<li>CPI减小到1，因为平均每个时钟周期发射或完成一条指令</li>
+<li>在任意时钟周期，在每个流水段正执行一条指令的部分</li>
+<li>理想情况下，性能提升5倍</li>
+</ol>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504202456375.png" alt="image-20210504202456375"></p>
+<h4 id="4-2-实现"><a href="#4-2-实现" class="headerlink" title="4.2 实现"></a>4.2 实现</h4><p>为了实现，在每两段之间新增流水线寄存器，其作用：</p>
+<ol>
+<li>在本周期提供流水段中指令操作的数据及控制信息</li>
+<li>周期结束时，存指令操作结果供下一个流水段指令使用</li>
+</ol>
+<p>如下图蓝色部分：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203103762.png" alt="image-20210504203103762"></p>
+<h4 id="4-3-对比"><a href="#4-3-对比" class="headerlink" title="4.3 对比"></a>4.3 对比</h4><ol>
+<li><p>对比单周期实现，流水线减少了时钟周期长度</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203333003.png" alt="image-20210504203333003"></p>
+</li>
+<li><p>对比多周期实现，流水线减少了CPI</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203357254.png" alt="image-20210504203357254"></p>
+</li>
+</ol>
+<h4 id="4-4-问题"><a href="#4-4-问题" class="headerlink" title="4.4 问题"></a>4.4 问题</h4><h5 id="4-4-1-存储器访问冲突"><a href="#4-4-1-存储器访问冲突" class="headerlink" title="4.4.1 存储器访问冲突"></a>4.4.1 存储器访问冲突</h5><p>结构冒险（structure hazard）：在同一时钟周期不同操作使用同一数据通路资源</p>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504203832540.png" alt="image-20210504203832540"></p>
+<p>解决：使用分开的指令cache和数据cache</p>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504204140731.png" alt="image-20210504204140731"></p>
+<p>注意：如果时钟周期不变，流水线存储系统的带宽<strong>必须是非流水线的5倍</strong></p>
+<h5 id="4-4-2-寄存器冲突"><a href="#4-4-2-寄存器冲突" class="headerlink" title="4.4.2 寄存器冲突"></a>4.4.2 寄存器冲突</h5><p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504204333445.png" alt="image-20210504204333445"></p>
+<p>解决：重新设计寄存器堆资源</p>
+<ol>
+<li><p>允许在一个时钟周期WB段先写，ID段后读</p>
+<blockquote>
+<p>每个时钟周期完成2个读和一个写</p>
+<p>需要提供两个读端口和一个写端口</p>
+<p>当写和读同一个寄存器会发生数据冒险（Data hazard）</p>
+</blockquote>
+</li>
+</ol>
+<h5 id="4-4-3-更新PC时冲突"><a href="#4-4-3-更新PC时冲突" class="headerlink" title="4.4.3 更新PC时冲突"></a>4.4.3 更新PC时冲突</h5><p>每个时钟周期必须增量PC并存储到PC</p>
+<p>遇到转移指令时可能会改变PC的值，可能会产生控制冒险（Control hazard）</p>
+<h3 id="5-流水线的基本性能"><a href="#5-流水线的基本性能" class="headerlink" title="5. 流水线的基本性能"></a>5. 流水线的基本性能</h3><ol>
+<li>增大了吞吐量（单位时间完成指令条数）</li>
+<li>每一条指令的执行时间没有加快</li>
+<li>延迟：附加的控制增加了开销</li>
+<li>不平衡：流水线各段时间以最慢的为准</li>
+<li>附加开销：流水线寄存器</li>
+<li>流水线冒险：串行机器不会产生冒险</li>
+<li>填充和排空：会减小加速比</li>
+</ol>
+<h2 id="流水线的主要障碍-流水线冒险（相关）"><a href="#流水线的主要障碍-流水线冒险（相关）" class="headerlink" title="流水线的主要障碍-流水线冒险（相关）"></a>流水线的主要障碍-流水线冒险（相关）</h2><h3 id="1-冒险分类与有停顿流水线性能"><a href="#1-冒险分类与有停顿流水线性能" class="headerlink" title="1. 冒险分类与有停顿流水线性能"></a>1. 冒险分类与有停顿流水线性能</h3><h4 id="1-1-冒险分类："><a href="#1-1-冒险分类：" class="headerlink" title="1.1 冒险分类："></a>1.1 冒险分类：</h4><ol>
+<li>结构冒险：指令重叠执行时，发生硬件资源冲突</li>
+<li>数据冒险：几条指令重叠执行时，后面指令依赖前面指令的结果却没有准备好（没有计算或存储）</li>
+<li>控制冒险：发生在流水线执行转移指令时，在进入ID段时，转移条件和转移目标地址不能按时提供给IF段取下一条指令</li>
+</ol>
+<p>冒险出现时：避免流水线上有冒险的指令执行下一个流水段</p>
+<p>冒险总是可以用停顿（流水线气泡&#x2F;气泡）解决：停顿时，其后的所有指令被停顿，指令之前的指令继续执行，没有新的指令被取到流水线</p>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504211313154.png" alt="image-20210504211313154"></p>
+<h4 id="1-2-有停顿的流水线性能"><a href="#1-2-有停顿的流水线性能" class="headerlink" title="1.2 有停顿的流水线性能"></a>1.2 有停顿的流水线性能</h4><p>加速比公式：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504211507892.png" alt="image-20210504211507892"></p>
+<p>流水线CPI&#x3D;理想CPI（≈1）+平均每条指令的停顿周期数</p>
+<p>忽略流水线时钟周期的额外开销，并假设流水段是平衡的，则：非流水线时钟周期&#x3D;流水线时钟周期</p>
+<p>最终得：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504212021602.png" alt="image-20210504212021602"></p>
+<h3 id="2-结构冒险：流水段竞争"><a href="#2-结构冒险：流水段竞争" class="headerlink" title="2. 结构冒险：流水段竞争"></a>2. 结构冒险：流水段竞争</h3><h4 id="2-1-定义"><a href="#2-1-定义" class="headerlink" title="2.1 定义"></a>2.1 定义</h4><p>发生在同一时钟周期，2条或多条指令想要使用同一硬件资源</p>
+<h4 id="2-2-出现情况"><a href="#2-2-出现情况" class="headerlink" title="2.2 出现情况"></a>2.2 出现情况</h4><ol>
+<li>多重访问寄存器堆</li>
+<li>多重访问存储器</li>
+<li>没有或没有充分流水功能部件</li>
+</ol>
+<h4 id="2-3-解决"><a href="#2-3-解决" class="headerlink" title="2.3 解决"></a>2.3 解决</h4><ol>
+<li><p>寄存器堆的多重访问</p>
+<blockquote>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213234617.png" alt="image-20210504213234617"></p>
+<p>方法1.：简单插入一个停顿，将降低加速比</p>
+<p>方法2：在一个时钟周期WB段先写，ID段后读</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213429124.png" alt="image-20210504213429124"></p>
+</blockquote>
+</li>
+<li><p>多重访问单端口存储器</p>
+<blockquote>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213646077.png" alt="image-20210504213646077"></p>
+<p>方法1：插入停顿</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213806538.png" alt="image-20210504213806538"></p>
+<p>方法2：提供另一个存储器端口</p>
+<p>方法3：分开指令存储器和数据存储器</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504213843051.png" alt="image-20210504213843051"></p>
+<p>方法4：使用指令缓冲器</p>
+</blockquote>
+</li>
+<li><p>没有完全流水化的功能部件</p>
+<blockquote>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210504214056065.png" alt="image-20210504214056065"></p>
+</blockquote>
+</li>
+</ol>
+<h4 id="2-4-认识"><a href="#2-4-认识" class="headerlink" title="2.4 认识"></a>2.4 认识</h4><p>结构冒险是被允许的，为了<strong>减少成本、减少部件延迟</strong></p>
+<h3 id="3-数据冒险"><a href="#3-数据冒险" class="headerlink" title="3. 数据冒险"></a>3. 数据冒险</h3><h4 id="3-1-定义"><a href="#3-1-定义" class="headerlink" title="3.1 定义"></a>3.1 定义</h4><p>由于流水线上指令重叠执行，改变了原来串行执行的读&#x2F;写操作数顺序，使得后面依赖前面指令结果的指令得不到准备好的数据</p>
+<h4 id="3-2-解决"><a href="#3-2-解决" class="headerlink" title="3.2 解决"></a>3.2 解决</h4><p>不要让指令在数据冒险时重叠执行</p>
+<h4 id="3-3-实施"><a href="#3-3-实施" class="headerlink" title="3.3 实施"></a>3.3 实施</h4><p>流水线停顿</p>
+<p>软件：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505153243028.png" alt="image-20210505153243028"></p>
+<p>硬件：</p>
+<blockquote>
+<p>增加硬件互锁（Interlock）</p>
+<blockquote>
+<p>增加额外硬件检测需要停顿的情况</p>
+<p>增加额外硬件放“气泡”（暂停）到流水线</p>
+</blockquote>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505153751740.png" alt="image-20210505153751740"></p>
+</blockquote>
+<h4 id="3-4-Forwarding（前推、直通、转发、相关数据通路）"><a href="#3-4-Forwarding（前推、直通、转发、相关数据通路）" class="headerlink" title="3.4 Forwarding（前推、直通、转发、相关数据通路）"></a>3.4 Forwarding（前推、直通、转发、相关数据通路）</h4><p>有数据冒险指令需要的结果可能已经计算出来，存放在流水线寄存器中，所以我们可以在数据通路中增加数据线（buses）传送这些结果，这些buses总是从后面的流水段连接到前面的流水段</p>
+<p>图示：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505154733078.png" alt="image-20210505154733078"></p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155325030.png" alt="image-20210505155325030"></p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155531924.png" alt="image-20210505155531924"></p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155617247.png" alt="image-20210505155617247"></p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155645091.png" alt="image-20210505155645091"></p>
+<p>没有Forwarding和有Forwarding的比较：</p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155812070.png" alt="image-20210505155812070"></p>
+<p><img src="/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/image-20210505155823248.png" alt="image-20210505155823248"></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84/" rel="tag"># 系统结构</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/02/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/" rel="prev" title="系统结构第二章_指令系统原理与实例">
+      <i class="fa fa-chevron-left"></i> 系统结构第二章_指令系统原理与实例
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/08/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="next" title="病毒_基础_硬盘数据结构">
+      病毒_基础_硬盘数据结构 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E6%B0%B4%E7%BA%BF%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">流水线的基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E4%BB%80%E4%B9%88%E6%98%AF%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-number">1.1.</span> <span class="nav-text">1. 什么是流水线</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-%E6%9C%AF%E8%AF%AD"><span class="nav-number">1.1.1.</span> <span class="nav-text">1.1 术语</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-%E7%89%B9%E7%82%B9"><span class="nav-number">1.1.2.</span> <span class="nav-text">1.2 特点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-RISC%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%89%B9%E7%82%B9"><span class="nav-number">1.2.</span> <span class="nav-text">2. RISC指令系统的特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E9%9D%9E%E6%B5%81%E6%B0%B4%E7%BA%BF%E6%96%B9%E5%BC%8F%E4%B8%8BRISC%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.</span> <span class="nav-text">3. 非流水线方式下RISC指令系统的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-%E5%A4%9A%E5%91%A8%E6%9C%9FCPU%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.1.</span> <span class="nav-text">3.1 多周期CPU实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-%E5%A4%9A%E5%91%A8%E6%9C%9F%E5%AE%9E%E7%8E%B0%E7%9A%84%E6%94%B9%E8%BF%9B"><span class="nav-number">1.3.2.</span> <span class="nav-text">3.2 多周期实现的改进</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E7%BB%8F%E5%85%B85%E6%AE%B5%E6%B5%81%E6%B0%B4%E7%BA%BFRISC%E5%A4%84%E7%90%86%E5%99%A8"><span class="nav-number">1.4.</span> <span class="nav-text">4. 经典5段流水线RISC处理器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-%E7%89%B9%E7%82%B9"><span class="nav-number">1.4.1.</span> <span class="nav-text">4.1 特点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-2-%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.4.2.</span> <span class="nav-text">4.2 实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-%E5%AF%B9%E6%AF%94"><span class="nav-number">1.4.3.</span> <span class="nav-text">4.3 对比</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-4-%E9%97%AE%E9%A2%98"><span class="nav-number">1.4.4.</span> <span class="nav-text">4.4 问题</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#4-4-1-%E5%AD%98%E5%82%A8%E5%99%A8%E8%AE%BF%E9%97%AE%E5%86%B2%E7%AA%81"><span class="nav-number">1.4.4.1.</span> <span class="nav-text">4.4.1 存储器访问冲突</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-4-2-%E5%AF%84%E5%AD%98%E5%99%A8%E5%86%B2%E7%AA%81"><span class="nav-number">1.4.4.2.</span> <span class="nav-text">4.4.2 寄存器冲突</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-4-3-%E6%9B%B4%E6%96%B0PC%E6%97%B6%E5%86%B2%E7%AA%81"><span class="nav-number">1.4.4.3.</span> <span class="nav-text">4.4.3 更新PC时冲突</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E6%B5%81%E6%B0%B4%E7%BA%BF%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%80%A7%E8%83%BD"><span class="nav-number">1.5.</span> <span class="nav-text">5. 流水线的基本性能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E6%B0%B4%E7%BA%BF%E7%9A%84%E4%B8%BB%E8%A6%81%E9%9A%9C%E7%A2%8D-%E6%B5%81%E6%B0%B4%E7%BA%BF%E5%86%92%E9%99%A9%EF%BC%88%E7%9B%B8%E5%85%B3%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">流水线的主要障碍-流水线冒险（相关）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%86%92%E9%99%A9%E5%88%86%E7%B1%BB%E4%B8%8E%E6%9C%89%E5%81%9C%E9%A1%BF%E6%B5%81%E6%B0%B4%E7%BA%BF%E6%80%A7%E8%83%BD"><span class="nav-number">2.1.</span> <span class="nav-text">1. 冒险分类与有停顿流水线性能</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-%E5%86%92%E9%99%A9%E5%88%86%E7%B1%BB%EF%BC%9A"><span class="nav-number">2.1.1.</span> <span class="nav-text">1.1 冒险分类：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-%E6%9C%89%E5%81%9C%E9%A1%BF%E7%9A%84%E6%B5%81%E6%B0%B4%E7%BA%BF%E6%80%A7%E8%83%BD"><span class="nav-number">2.1.2.</span> <span class="nav-text">1.2 有停顿的流水线性能</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E7%BB%93%E6%9E%84%E5%86%92%E9%99%A9%EF%BC%9A%E6%B5%81%E6%B0%B4%E6%AE%B5%E7%AB%9E%E4%BA%89"><span class="nav-number">2.2.</span> <span class="nav-text">2. 结构冒险：流水段竞争</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-%E5%AE%9A%E4%B9%89"><span class="nav-number">2.2.1.</span> <span class="nav-text">2.1 定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-%E5%87%BA%E7%8E%B0%E6%83%85%E5%86%B5"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.2 出现情况</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-%E8%A7%A3%E5%86%B3"><span class="nav-number">2.2.3.</span> <span class="nav-text">2.3 解决</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-%E8%AE%A4%E8%AF%86"><span class="nav-number">2.2.4.</span> <span class="nav-text">2.4 认识</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%95%B0%E6%8D%AE%E5%86%92%E9%99%A9"><span class="nav-number">2.3.</span> <span class="nav-text">3. 数据冒险</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-%E5%AE%9A%E4%B9%89"><span class="nav-number">2.3.1.</span> <span class="nav-text">3.1 定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-%E8%A7%A3%E5%86%B3"><span class="nav-number">2.3.2.</span> <span class="nav-text">3.2 解决</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-%E5%AE%9E%E6%96%BD"><span class="nav-number">2.3.3.</span> <span class="nav-text">3.3 实施</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-4-Forwarding%EF%BC%88%E5%89%8D%E6%8E%A8%E3%80%81%E7%9B%B4%E9%80%9A%E3%80%81%E8%BD%AC%E5%8F%91%E3%80%81%E7%9B%B8%E5%85%B3%E6%95%B0%E6%8D%AE%E9%80%9A%E8%B7%AF%EF%BC%89"><span class="nav-number">2.3.4.</span> <span class="nav-text">3.4 Forwarding（前推、直通、转发、相关数据通路）</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

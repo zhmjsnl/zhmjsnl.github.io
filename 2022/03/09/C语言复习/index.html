@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="第一章程序：是为实现特定目标或解决特定问题而用计算机语言编写的命令序列的集合。为实现预期目的而进行操作的一系列语句和指令。一般分为系统程序和应用程序两大类。 程序就是为使电子计算机执行一个或多个操作，或执行某一任务，按序设计的计算机指令的集合">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C语言复习">
+<meta property="og:url" content="https://wsw8.online/2022/03/09/C%E8%AF%AD%E8%A8%80%E5%A4%8D%E4%B9%A0/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="第一章程序：是为实现特定目标或解决特定问题而用计算机语言编写的命令序列的集合。为实现预期目的而进行操作的一系列语句和指令。一般分为系统程序和应用程序两大类。 程序就是为使电子计算机执行一个或多个操作，或执行某一任务，按序设计的计算机指令的集合">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-03-09T09:25:11.000Z">
+<meta property="article:modified_time" content="2022-03-09T09:29:37.987Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="C">
+<meta property="article:tag" content="复习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wsw8.online/2022/03/09/C%E8%AF%AD%E8%A8%80%E5%A4%8D%E4%B9%A0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>C语言复习 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2022/03/09/C%E8%AF%AD%E8%A8%80%E5%A4%8D%E4%B9%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          C语言复习
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-03-09 17:25:11 / 修改时间：17:29:37" itemprop="dateCreated datePublished" datetime="2022-03-09T17:25:11+08:00">2022-03-09</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="第一章"><a href="#第一章" class="headerlink" title="第一章"></a>第一章</h3><p>程序：是为实现特定目标或解决特定问题而用计算机语言编写的命令序列的集合。为实现预期目的而进行操作的一系列语句和指令。一般分为系统程序和应用程序两大类。 程序就是为使电子计算机执行一个或多个操作，或执行某一任务，按序设计的计算机指令的集合 </p>
+<span id="more"></span>
+
+<p>软件：是一系列按照特定顺序组织的计算机数据和指令的集合。一般来讲软件被划分为编程语言、系统软件、应用软件和介于这两者之间的中间件。软件并不只是包括可以在计算机（这里的计算机是指广义的计算机）上运行的电脑程序，与这些电脑程序相关的文档一般也被认为是软件的一部分。简单的说软件就是程序加文档的集合体。</p>
+<p>程序设计：给出解决特定问题程序的方法和过程，是软件构造活动的重要组成部分。程序设计过程应当包括需求分析－&gt;  设计－&gt; 编码－&gt; 测试－&gt; 维护五个阶段，并生成各种文档资料。</p>
+<p>程序设计语言：用于书写计算机程序的语言。语言的基础是一组记号和一组规则。根据规则由记号构成的记号串的总体就是语言。在程序设计语言中，这些记号串就是程序。程序设计语言有3个方面的因素，即语法、语义和语用。语法表示程序的结构或形式，亦即表示构成语言的各个记号之间的组合规律，但不涉及这些记号的特定含义，也不涉及使用者。语义表示程序的含义，亦即表示按照各种方法所表示的各个记号的特定含义，但不涉及使用者。语用表示程序与使用者的关系。</p>
+<h3 id="第四章"><a href="#第四章" class="headerlink" title="第四章"></a>第四章</h3><p>与字符有关的处理函数</p>
+<p>strcat：字符串连接函数<br>strcpy：字符串拷贝函数<br>strcmp：字符串比较函数<br>strlen：字符串长度函数（实际长度）</p>
+<h3 id="第五章"><a href="#第五章" class="headerlink" title="第五章"></a>第五章</h3><h4 id="指针"><a href="#指针" class="headerlink" title="指针"></a>指针</h4><p>动态分配内存：char *text&#x3D;(char*)malloc(50000*100);</p>
+<p>解决了：</p>
+<ul>
+<li>数组空间大小不能适度改变的问题</li>
+<li>大数组导致栈溢出问题</li>
+<li>数组的使用范围问题–函数中定义的数组在函数外难于使用</li>
+</ul>
+<p>交换两个结构的内容，直接<strong>交换指针</strong></p>
+<h5 id="指针概念"><a href="#指针概念" class="headerlink" title="指针概念"></a>指针概念</h5><ol>
+<li>按变量名访问存取变量的方式称为“直接访问”方式</li>
+<li>通过一个变量（指针变量）访问另一个变量var的方式称为“间接访问”方式</li>
+<li>指针变量（32位占4字节，64位占8字节）</li>
+</ol>
+<h5 id="指针变量的定义"><a href="#指针变量的定义" class="headerlink" title="指针变量的定义"></a>指针变量的定义</h5><p>使用指针前必须给指针变量赋初始值</p>
+<h5 id="指针运算"><a href="#指针运算" class="headerlink" title="指针运算"></a>指针运算</h5><ol>
+<li>对指针赋值</li>
+<li>地址运算&amp;和内容运算*</li>
+<li>加减，实际移动地址p±n*sizeof，以字节编址</li>
+<li>比较</li>
+</ol>
+<h5 id="指针与数组"><a href="#指针与数组" class="headerlink" title="指针与数组"></a>指针与数组</h5><p>数组名就是一个指针常量</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> arr[<span class="number">100</span>];</span><br><span class="line">则arr代表&amp;arr[<span class="number">0</span>]</span><br></pre></td></tr></table></figure>
+
+<p>访问数组元素：</p>
+<ol>
+<li><p>a[i]</p>
+</li>
+<li><p>*(p+i)</p>
+</li>
+<li><p>*(a+i)</p>
+</li>
+<li><p>p[i]</p>
+</li>
+</ol>
+<p><strong>获取数组元素个数：</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">size=<span class="keyword">sizeof</span>(iarray)/<span class="keyword">sizeof</span>(*iarray)<span class="comment">//sizeof(数组)可以算出数组占用多少字节</span></span><br></pre></td></tr></table></figure>
+
+<p>三种存取结构成员的方式：</p>
+<ol>
+<li>myinfo.num</li>
+<li>(*p_info).num</li>
+<li>p_info-&gt;num</li>
+</ol>
+<h4 id="字符串指针"><a href="#字符串指针" class="headerlink" title="字符串指针"></a>字符串指针</h4><ol>
+<li><p>可以利用字符数组或字符指针代表一个字符串<br>字符数组：（各元素值可以改变）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> str[]=<span class="string">&quot;hello&quot;</span>;</span><br><span class="line"><span class="built_in">scanf</span>(<span class="string">&quot;%str&quot;</span>,str);</span><br><span class="line"><span class="built_in">strcpy</span>(str,<span class="string">&quot;hello&quot;</span>);</span><br><span class="line">str=<span class="string">&quot;love&quot;</span>;<span class="comment">//err</span></span><br></pre></td></tr></table></figure>
+
+<p>字符指针变量：（元素值不可变）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *a = <span class="string">&quot;hello&quot;</span>; </span><br><span class="line">a=<span class="string">&quot;I love China!&quot;</span>;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h4 id="指针数组"><a href="#指针数组" class="headerlink" title="指针数组"></a>指针数组</h4><p>数组中每一个元素都是一个指针</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *proname[]=&#123;<span class="string">&quot;FORTRAN&quot;</span>,<span class="string">&quot;C&quot;</span>,<span class="string">&quot;C++&quot;</span>&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>指针数组与二维数组相比是可以节约空间的</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> name[<span class="number">3</span>][<span class="number">8</span>]=&#123;<span class="string">&quot;FORTRAN&quot;</span>,<span class="string">&quot;C&quot;</span>,<span class="string">&quot;C++&quot;</span>&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第六章"><a href="#第六章" class="headerlink" title="第六章"></a>第六章</h3><h4 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h4><p><strong>函数需要先定义，再调用</strong></p>
+<p><strong>否则，需要对函数进行声明</strong></p>
+<p>程序空间分配：</p>
+<p>程序代码（Code area）<br>全局数据，静态数据（Data area）<br>动态数据（heap area）堆区<br>局部数据（Stack area）栈区</p>
+<p>变量的存储类型：</p>
+<p>自动变量（auto）：局部变量，存放栈区中<br>外部变量（extern）：全局变量，存放于全局数据区，用之前需要用extern扩展到本源程序<br>静态变量（static）：作用域与局部变量类似，但函数调用结束后其值得以保存，<strong>在多次函数调用中仅初始化1次</strong><br>寄存器变量（register）：只能用整型和字符型，超过的按自动变量处理<br>静态外部变量：静态外部变量的作用域是定义该静态外部变量的源程序文件，外部变量作用域是组成程序的所有源程序文件</p>
+<h5 id="函数与数组"><a href="#函数与数组" class="headerlink" title="函数与数组"></a>函数与数组</h5><ol>
+<li>数组元素作为实参使用（传数据值）</li>
+<li>函数的形参和实参都是数组（传地址）：实参是数组名，形参是数组。为同一数组。形参数组和实参数组的长度可以不相同，形参也可以不指定数组的长度，多维数组可以省去第一维数组长度</li>
+<li>形参是指针，实参是数组（传地址值）：传指针，一般还需要传处理数据的个数。例如指针作为形参，实参是数组名</li>
+</ol>
+<h4 id="函数与指针"><a href="#函数与指针" class="headerlink" title="函数与指针"></a>函数与指针</h4><ol>
+<li><p>返回指针的函数（指针型函数）</p>
+</li>
+<li><p>指向函数的指针（函数指针）</p>
+</li>
+</ol>
+<h4 id="命令行参数"><a href="#命令行参数" class="headerlink" title="命令行参数"></a>命令行参数</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc,<span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>argc：参数个数，比实际参数个数多1</p>
+<p>*argv[]：字符型指针数组，每个元素是指向参数（字符串常量）的指针</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C</a>
+              <a href="/tags/%E5%A4%8D%E4%B9%A0/" rel="tag"># 复习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/20/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AC%AC%E4%B8%83%E7%AB%A0/" rel="prev" title="编译原理第七章-自上而下的语法分析">
+      <i class="fa fa-chevron-left"></i> 编译原理第七章-自上而下的语法分析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E7%AB%A0"><span class="nav-number">1.</span> <span class="nav-text">第一章</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E7%AB%A0"><span class="nav-number">2.</span> <span class="nav-text">第四章</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%94%E7%AB%A0"><span class="nav-number">3.</span> <span class="nav-text">第五章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%87%E9%92%88"><span class="nav-number">3.1.</span> <span class="nav-text">指针</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8C%87%E9%92%88%E6%A6%82%E5%BF%B5"><span class="nav-number">3.1.1.</span> <span class="nav-text">指针概念</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8C%87%E9%92%88%E5%8F%98%E9%87%8F%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">3.1.2.</span> <span class="nav-text">指针变量的定义</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8C%87%E9%92%88%E8%BF%90%E7%AE%97"><span class="nav-number">3.1.3.</span> <span class="nav-text">指针运算</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8C%87%E9%92%88%E4%B8%8E%E6%95%B0%E7%BB%84"><span class="nav-number">3.1.4.</span> <span class="nav-text">指针与数组</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%8C%87%E9%92%88"><span class="nav-number">3.2.</span> <span class="nav-text">字符串指针</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%87%E9%92%88%E6%95%B0%E7%BB%84"><span class="nav-number">3.3.</span> <span class="nav-text">指针数组</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E5%85%AD%E7%AB%A0"><span class="nav-number">4.</span> <span class="nav-text">第六章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0"><span class="nav-number">4.1.</span> <span class="nav-text">函数</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E4%B8%8E%E6%95%B0%E7%BB%84"><span class="nav-number">4.1.1.</span> <span class="nav-text">函数与数组</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E4%B8%8E%E6%8C%87%E9%92%88"><span class="nav-number">4.2.</span> <span class="nav-text">函数与指针</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0"><span class="nav-number">4.3.</span> <span class="nav-text">命令行参数</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

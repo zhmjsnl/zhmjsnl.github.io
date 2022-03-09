@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="硬盘分区作用建立硬盘数据结构（分区表、扩展分区等） 执行分区划分以柱面为单位，一个柱面不能属于两个分区">
+<meta property="og:type" content="article">
+<meta property="og:title" content="病毒_基础_硬盘数据结构">
+<meta property="og:url" content="https://wsw8.online/2021/05/08/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="硬盘分区作用建立硬盘数据结构（分区表、扩展分区等） 执行分区划分以柱面为单位，一个柱面不能属于两个分区">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508163959563.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508164230521.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508165341507.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508165548520.png">
+<meta property="og:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508170556297.png">
+<meta property="article:published_time" content="2021-05-08T08:31:12.000Z">
+<meta property="article:modified_time" content="2021-05-10T08:30:44.349Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="病毒">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508163959563.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/08/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>病毒_基础_硬盘数据结构 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/08/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          病毒_基础_硬盘数据结构
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-08 16:31:12" itemprop="dateCreated datePublished" datetime="2021-05-08T16:31:12+08:00">2021-05-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-10 16:30:44" itemprop="dateModified" datetime="2021-05-10T16:30:44+08:00">2021-05-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%97%85%E6%AF%92/" itemprop="url" rel="index"><span itemprop="name">病毒</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="硬盘分区"><a href="#硬盘分区" class="headerlink" title="硬盘分区"></a>硬盘分区</h2><h3 id="作用"><a href="#作用" class="headerlink" title="作用"></a>作用</h3><p>建立硬盘数据结构（分区表、扩展分区等）</p>
+<h3 id="执行"><a href="#执行" class="headerlink" title="执行"></a>执行</h3><p>分区划分以<strong>柱面</strong>为单位，一个柱面不能属于两个分区</p>
+<span id="more"></span>
+
+<h2 id="主引导扇区（第一个扇区）"><a href="#主引导扇区（第一个扇区）" class="headerlink" title="主引导扇区（第一个扇区）"></a>主引导扇区（第一个扇区）</h2><h3 id="图示"><a href="#图示" class="headerlink" title="图示"></a>图示</h3><p><img src="/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508163959563.png" alt="image-20210508163959563"></p>
+<h3 id="找到分区入口"><a href="#找到分区入口" class="headerlink" title="找到分区入口"></a>找到分区入口</h3><h4 id="分区表项的内容"><a href="#分区表项的内容" class="headerlink" title="分区表项的内容"></a>分区表项的内容</h4><p><img src="/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508164230521.png" alt="image-20210508164230521"></p>
+<h4 id="相对扇区数"><a href="#相对扇区数" class="headerlink" title="相对扇区数"></a>相对扇区数</h4><p>相对于引导记录头部的偏移扇区数</p>
+<h4 id="MBR和EBR"><a href="#MBR和EBR" class="headerlink" title="MBR和EBR"></a>MBR和EBR</h4><p>主分区表中的四个分区表项，属于MBR</p>
+<p>扩展分区的分区表项，属于EBR（Extended MBR）</p>
+<blockquote>
+<p>EBR为了兼容MBR，完全复用了MBR的引导扇区格式，但前466个字节为0，后两个分区表项无效，结束标识55AA</p>
+<p>主分区表中最后一个有效主分区记录指向的磁盘空间<strong>（主扩展分区）</strong>将用EBR划分，分为N个逻辑盘，形成EBR链</p>
+<p><img src="/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508165341507.png" alt="image-20210508165341507"></p>
+</blockquote>
+<h3 id="整个图示"><a href="#整个图示" class="headerlink" title="整个图示"></a>整个图示</h3><p><img src="/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508165548520.png" alt="image-20210508165548520"></p>
+<h3 id="定位主分区和扩展分区的关键区别"><a href="#定位主分区和扩展分区的关键区别" class="headerlink" title="定位主分区和扩展分区的关键区别"></a>定位主分区和扩展分区的关键区别</h3><p>主分区：</p>
+<ol>
+<li>偏移量是相对物理盘开始（MBR）的偏移，根据偏移得到的就是该分区的引导扇区和文件系统</li>
+</ol>
+<p>扩展分区：</p>
+<ol>
+<li>偏移量是相对于包含该分区的扩展分区开始处（EBR）而言</li>
+</ol>
+<p><img src="/images/%E7%97%85%E6%AF%92-%E5%9F%BA%E7%A1%80-%E7%A1%AC%E7%9B%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/image-20210508170556297.png" alt="image-20210508170556297"></p>
+<h2 id="硬盘引导过程"><a href="#硬盘引导过程" class="headerlink" title="硬盘引导过程"></a>硬盘引导过程</h2><ol>
+<li><p><strong>开机加电自检</strong></p>
+<blockquote>
+<p>开机，CPU跳到FFFF：0000处，由该处的一条JMP指令跳到BIOS的自检程序（POST），自检通过后，加载引导程序（与操作系统无关的MBR，按用户在BIOS中指定顺序，硬盘，软盘，光驱或U盘等）</p>
+</blockquote>
+</li>
+<li><p><strong>读主引导扇区</strong></p>
+<blockquote>
+<p>将主引导扇区MBR读入到内存的0000：7C00，扫描主分区表，搜索激活分区，分区表项第一个字节为0x80表示激活分区</p>
+</blockquote>
+</li>
+<li><p><strong>读激活分区引导扇区</strong></p>
+<blockquote>
+<p>如果有多个激活分区或没有，报错结束。否则读取激活分区引导扇区到0000：7C00</p>
+</blockquote>
+</li>
+<li><p><strong>操作系统引导代码引导系统并读取操作系统初始化文件</strong></p>
+</li>
+</ol>
+<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><ol>
+<li>MBR中硬盘数据结构与操作系统无关</li>
+<li>操作系统相关的引导代码在激活分区的引导扇区，而MBR的引导程序选择激活分区</li>
+<li>以上步骤采用的是标准MBR，但硬盘也可以引导多系统，要引导多系统必须用专门的引导程序替换标准MBR，这样替换后的硬盘引导代码执行时可让用户选择启动哪个硬盘分区</li>
+</ol>
+<h3 id="X86实模式寻址"><a href="#X86实模式寻址" class="headerlink" title="X86实模式寻址"></a>X86实模式寻址</h3><ol>
+<li>一个段64k，2字节表示</li>
+<li>段地址：段内偏移     例如：0001：1234</li>
+<li>省略段地址 相对DS数据段寄存器</li>
+<li>为了方便，CS（指令段）、DS（数据段）、ES（附加段）、SS（栈段）设定为相同段</li>
+<li>指令获取 CS：IP、栈操作 SS：SP</li>
+<li>涉及内存的操作指令中没有段信息用DS</li>
+</ol>
+<h2 id="硬盘逻辑锁"><a href="#硬盘逻辑锁" class="headerlink" title="硬盘逻辑锁"></a>硬盘逻辑锁</h2><p>最后一个分区表项又指向了新的MBR形成一个死锁</p>
+<h3 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h3><ol>
+<li>如何遍历FAT表获得一个文件所占的簇？</li>
+<li>对于一个多层嵌套的文件，如何找到文件所对应的目录项？</li>
+<li>如何找到硬盘的主分区和扩展分区？</li>
+<li>简述硬盘引导的过程？</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E7%97%85%E6%AF%92/" rel="tag"># 病毒</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/03/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%B8%89%E7%AB%A0-%E6%B5%81%E6%B0%B4%E7%BA%BF/" rel="prev" title="系统结构第三章_流水线">
+      <i class="fa fa-chevron-left"></i> 系统结构第三章_流水线
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/08/%E7%97%85%E6%AF%92-DOS-%E7%97%85%E6%AF%92%E5%AF%84%E7%94%9F/" rel="next" title="病毒_DOS_病毒寄生">
+      病毒_DOS_病毒寄生 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E7%9B%98%E5%88%86%E5%8C%BA"><span class="nav-number">1.</span> <span class="nav-text">硬盘分区</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%9C%E7%94%A8"><span class="nav-number">1.1.</span> <span class="nav-text">作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C"><span class="nav-number">1.2.</span> <span class="nav-text">执行</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%BC%95%E5%AF%BC%E6%89%87%E5%8C%BA%EF%BC%88%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%89%87%E5%8C%BA%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">主引导扇区（第一个扇区）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E7%A4%BA"><span class="nav-number">2.1.</span> <span class="nav-text">图示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%BE%E5%88%B0%E5%88%86%E5%8C%BA%E5%85%A5%E5%8F%A3"><span class="nav-number">2.2.</span> <span class="nav-text">找到分区入口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%8C%BA%E8%A1%A8%E9%A1%B9%E7%9A%84%E5%86%85%E5%AE%B9"><span class="nav-number">2.2.1.</span> <span class="nav-text">分区表项的内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%B8%E5%AF%B9%E6%89%87%E5%8C%BA%E6%95%B0"><span class="nav-number">2.2.2.</span> <span class="nav-text">相对扇区数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MBR%E5%92%8CEBR"><span class="nav-number">2.2.3.</span> <span class="nav-text">MBR和EBR</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%B8%AA%E5%9B%BE%E7%A4%BA"><span class="nav-number">2.3.</span> <span class="nav-text">整个图示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%BD%8D%E4%B8%BB%E5%88%86%E5%8C%BA%E5%92%8C%E6%89%A9%E5%B1%95%E5%88%86%E5%8C%BA%E7%9A%84%E5%85%B3%E9%94%AE%E5%8C%BA%E5%88%AB"><span class="nav-number">2.4.</span> <span class="nav-text">定位主分区和扩展分区的关键区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E7%9B%98%E5%BC%95%E5%AF%BC%E8%BF%87%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">硬盘引导过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F"><span class="nav-number">3.1.</span> <span class="nav-text">注意</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#X86%E5%AE%9E%E6%A8%A1%E5%BC%8F%E5%AF%BB%E5%9D%80"><span class="nav-number">3.2.</span> <span class="nav-text">X86实模式寻址</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E7%9B%98%E9%80%BB%E8%BE%91%E9%94%81"><span class="nav-number">4.</span> <span class="nav-text">硬盘逻辑锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%9D%E8%80%83%E9%A2%98"><span class="nav-number">4.1.</span> <span class="nav-text">思考题</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

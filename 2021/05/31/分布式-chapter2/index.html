@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="冯诺依曼模型改进冯诺依曼模型核心：存储程序、顺序执行特点：  数据和指令一律用二进制数表示 指令和数据不加区别的混合存储在同一个存储器中 顺序执行程序的每一条指令 计算机硬件由运算器、控制器、存储器、输入设备、输出设备五大部分组成">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式-chapter2">
+<meta property="og:url" content="https://wsw8.online/2021/05/31/%E5%88%86%E5%B8%83%E5%BC%8F-chapter2/index.html">
+<meta property="og:site_name" content="江湖">
+<meta property="og:description" content="冯诺依曼模型改进冯诺依曼模型核心：存储程序、顺序执行特点：  数据和指令一律用二进制数表示 指令和数据不加区别的混合存储在同一个存储器中 顺序执行程序的每一条指令 计算机硬件由运算器、控制器、存储器、输入设备、输出设备五大部分组成">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601091853727.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601103555904.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601103847404.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601153050111.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601154041479.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601160857255.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601161056947.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601161417338.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601161935648.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601162609422.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601163512344.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601163612602.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601163804342.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601164013106.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602083404492.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602084600918.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602094928104.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602092152907.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602092756924.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602093354289.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602093501481.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602093709062.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602093812713.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602094215823.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602094646542.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602095050371.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602095128619.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602100428695.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210602210912932.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210603082338745.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210603091059608.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210603091944379.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210603093352586.png">
+<meta property="og:image" content="https://wsw8.online/images/分布式-chapter2/image-20210603093716369.png">
+<meta property="article:published_time" content="2021-05-31T12:59:16.000Z">
+<meta property="article:modified_time" content="2021-06-05T02:10:11.306Z">
+<meta property="article:author" content="汪道之">
+<meta property="article:tag" content="课程">
+<meta property="article:tag" content="计算机">
+<meta property="article:tag" content="分布式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wsw8.online/images/分布式-chapter2/image-20210601091853727.png">
+
+<link rel="canonical" href="https://wsw8.online/2021/05/31/%E5%88%86%E5%B8%83%E5%BC%8F-chapter2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>分布式-chapter2 | 江湖</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">江湖</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">有人的地方就有江湖</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/31/%E5%88%86%E5%B8%83%E5%BC%8F-chapter2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="汪道之">
+      <meta itemprop="description" content="有的人身着布衣，却心有锦缎。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="江湖">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          分布式-chapter2
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-31 20:59:16" itemprop="dateCreated datePublished" datetime="2021-05-31T20:59:16+08:00">2021-05-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-06-05 10:10:11" itemprop="dateModified" datetime="2021-06-05T10:10:11+08:00">2021-06-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">分布式</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="冯诺依曼模型改进"><a href="#冯诺依曼模型改进" class="headerlink" title="冯诺依曼模型改进"></a>冯诺依曼模型改进</h2><h3 id="冯诺依曼模型"><a href="#冯诺依曼模型" class="headerlink" title="冯诺依曼模型"></a>冯诺依曼模型</h3><p>核心：存储程序、顺序执行<br>特点：</p>
+<ol>
+<li>数据和指令一律用二进制数表示</li>
+<li>指令和数据不加区别的混合存储在同一个存储器中</li>
+<li>顺序执行程序的每一条指令</li>
+<li>计算机硬件由运算器、控制器、存储器、输入设备、输出设备五大部分组成</li>
+</ol>
+<span id="more"></span>
+
+<img src="/images/分布式-chapter2/image-20210601091853727.png" alt="image-20210601091853727" style="zoom:50%;" />
+
+<p>局限性：主存和CPU的分离通常被称为冯诺依曼瓶颈</p>
+<h3 id="三个改进"><a href="#三个改进" class="headerlink" title="三个改进"></a>三个改进</h3><ol>
+<li>缓存</li>
+<li>虚拟内存</li>
+<li>低级并行性</li>
+</ol>
+<h3 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h3><h4 id="基本知识"><a href="#基本知识" class="headerlink" title="基本知识"></a>基本知识</h4><p>缓存：存储位置的集合，可以比其他一些内存位置在更短的时间内访问<br>CPU缓存：CPU可以以比访问主存更快的速度访问内存位置的集合</p>
+<blockquote>
+<p>CPU缓存可以与CPU同芯片，也可以位于访问速度比普通芯片快得多的单独芯片上</p>
+</blockquote>
+<h4 id="哪些数据或指令存储在cache中"><a href="#哪些数据或指令存储在cache中" class="headerlink" title="哪些数据或指令存储在cache中"></a>哪些数据或指令存储在cache中</h4><p>程序倾向于使用物理上接近最近使用的数据和指令的数据和指令</p>
+<h4 id="局部性原理"><a href="#局部性原理" class="headerlink" title="局部性原理"></a>局部性原理</h4><p>CPU访问存储器时，无论是存取指令还是存取数据，所访问的存储单元都趋于聚集在一个较小的连续区域中</p>
+<h4 id="缓存一致性"><a href="#缓存一致性" class="headerlink" title="缓存一致性"></a>缓存一致性</h4><ol>
+<li><p>写直达</p>
+<p>当数据被写入缓存时，利用缓存更新主存的数据</p>
+</li>
+<li><p>写回</p>
+<p>标记缓存中更改的数据为脏，当标记为脏的缓存要被替换时，将缓存中标记为脏的行写回主存</p>
+</li>
+</ol>
+<h4 id="缓存映射"><a href="#缓存映射" class="headerlink" title="缓存映射"></a>缓存映射</h4><ol>
+<li><p>全相联映射</p>
+<p>可以在缓存的任意位置放置数据</p>
+</li>
+<li><p>直接映射</p>
+<p>每个数据都有自己独特的位置</p>
+</li>
+<li><p>组相连映射</p>
+<p>每个数据可以放置在n个不同位置之一</p>
+<blockquote>
+<p>当冲突时的置换方案：最近使用最少，缓存具有使用块的相对顺序的记录</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="对cache命中率的间接控制"><a href="#对cache命中率的间接控制" class="headerlink" title="对cache命中率的间接控制"></a>对cache命中率的间接控制</h4><img src="/images/分布式-chapter2/image-20210601103555904.png" alt="image-20210601103555904" style="zoom:50%;" />
+
+<p>假设：</p>
+<ol>
+<li><p>最大值为4</p>
+</li>
+<li><p>当循环开始，A中的元素都不在缓存</p>
+</li>
+<li><p>一个缓存行包含了A中的四个元素</p>
+<img src="/images/分布式-chapter2/image-20210601103847404.png" alt="image-20210601103847404" style="zoom:50%;" />
+</li>
+<li><p>缓存是直接映射的，只能存储A中的8个元素，也即两个cache行</p>
+</li>
+</ol>
+<p>结论：</p>
+<ol>
+<li>在以上假设下，第一个循环产生四次cache缺失</li>
+<li>而第二次循环产生了16次cache缺失，每次访问A中元素都缺失了</li>
+</ol>
+<h3 id="虚拟内存"><a href="#虚拟内存" class="headerlink" title="虚拟内存"></a>虚拟内存</h3><p>使主内存功能成为辅助存储的缓存，利用空间局部性和时间局部性，只将程序的活跃部分保留在主存中</p>
+<h3 id="指令级并行"><a href="#指令级并行" class="headerlink" title="指令级并行"></a>指令级并行</h3><p>指令级并行（ILP）试图通过让多个处理器组件或功能单元同时执行指令来提高处理器性能</p>
+<h4 id="流水线"><a href="#流水线" class="headerlink" title="流水线"></a>流水线</h4><p>功能单元分阶段排列</p>
+<p>一般来说，具有k个阶段的流水线不会得到k倍的性能改进</p>
+<blockquote>
+<ol>
+<li>各职能单位所需时间不同</li>
+<li>延迟可能导致流水线暂停</li>
+</ol>
+</blockquote>
+<h4 id="多事务"><a href="#多事务" class="headerlink" title="多事务"></a>多事务</h4><p>多事务处理器复制功能单元，并尝试同时在程序中执行不同的指令</p>
+<p>静态多事务：功能单元在编译时调派</p>
+<p>动态多事务：功能单元在运行时调派</p>
+<blockquote>
+<p>为了使用多事务，系统需要找到可以同时执行的指令</p>
+<ol>
+<li>采用猜测执行，如果预测行为不正确，那么就返回并重新执行任务</li>
+</ol>
+<p>其他方法</p>
+<ol>
+<li><p>线程级并行，比ILP粗粒度的并行</p>
+</li>
+<li><p>能多重读取的硬件</p>
+<blockquote>
+<p>细粒度：处理器在每个指令执行完成后在线程之间切换，跳过停顿的线程</p>
+<p>优点：能避免因停顿而浪费的处理器性能</p>
+<p>缺点：准备执行一长串指令的线程可能必须要等所有指令执行完</p>
+<p>粗粒度：只切换停顿的线程，等待耗时操作的完成</p>
+<p>优点：不需要频繁的切换线程</p>
+<p>缺点：处理器可能在较短的停顿上闲置，线程切换也可能会导致延迟</p>
+</blockquote>
+</li>
+</ol>
+</blockquote>
+<h2 id="硬件并行"><a href="#硬件并行" class="headerlink" title="硬件并行"></a>硬件并行</h2><h3 id="Flynn的分类法"><a href="#Flynn的分类法" class="headerlink" title="Flynn的分类法"></a>Flynn的分类法</h3><img src="/images/分布式-chapter2/image-20210601153050111.png" alt="image-20210601153050111" style="zoom:50%;" />
+
+<h4 id="SISD"><a href="#SISD" class="headerlink" title="SISD"></a>SISD</h4><ol>
+<li>一次执行一条指令、一次读取或存储 一项数据</li>
+<li>经典的冯诺依曼模型机</li>
+<li>从逻辑上讲，是单处理器</li>
+</ol>
+<h4 id="MISD"><a href="#MISD" class="headerlink" title="MISD"></a>MISD</h4><ol>
+<li>多个指令流单个数据流</li>
+<li>并未使用</li>
+<li>也许适用于流水线计算</li>
+</ol>
+<h4 id="SIMD"><a href="#SIMD" class="headerlink" title="SIMD"></a>SIMD</h4><ol>
+<li><p>对于单个指令流应用多个数据流</p>
+</li>
+<li><p>单个控制单元和多个运算单元（ALU）</p>
+</li>
+<li><p>多处理器执行相同的指令</p>
+<blockquote>
+<p>在经典的SIMD系统中，每个ALU必须等待下一条指令广播才能继续<br>所有ALU执行相同的指令或者处于闲置状态</p>
+</blockquote>
+</li>
+<li><p>通过在处理器之间划分数据实现并行，每个处理器看到的数据可能不一样</p>
+</li>
+</ol>
+<img src="/images/分布式-chapter2/image-20210601154041479.png" alt="image-20210601154041479" style="zoom:50%;" />
+
+<h5 id="矢量处理器"><a href="#矢量处理器" class="headerlink" title="矢量处理器"></a>矢量处理器</h5><p>对数组或向量进行操作，传统的CPU都是对单个元素或者标量操作</p>
+<p>最近的典型系统有以下特征：</p>
+<ol>
+<li>矢量寄存器</li>
+<li>矢量化和流水线化的功能单元</li>
+<li>矢量指令</li>
+<li>交错内存</li>
+<li>跨越式的内存访问和硬件分发&#x2F;收集</li>
+</ol>
+<p>优点：</p>
+<ol>
+<li>快速、易于使用</li>
+<li>矢量编译器善于识别可矢量化的代码</li>
+<li>编译器可以提供循环无法矢量化的信息以及原因，帮助用户重新评估代码</li>
+<li>高内存带宽</li>
+<li>每个加载的数据项都被使用</li>
+</ol>
+<p>缺点：</p>
+<ol>
+<li>不处理不规则的数据结构以及其他并行架构</li>
+<li>处理大问题的能力有限制（可扩展性）</li>
+</ol>
+<h4 id="MIMD"><a href="#MIMD" class="headerlink" title="MIMD"></a>MIMD</h4><ol>
+<li>支持在多个数据流上运行多个同步的指令流</li>
+<li>通常由完全独立的处理单元或处理器组成，每个单元都有自己的控制单元和ALU</li>
+<li>MIMD系统通常是异步的</li>
+<li>许多MIMD系统都有单独的时钟</li>
+<li>示例：共享内存和分布式内存机器</li>
+</ol>
+<h5 id="MIMD的物理组织"><a href="#MIMD的物理组织" class="headerlink" title="MIMD的物理组织"></a>MIMD的物理组织</h5><ol>
+<li>共享缓存架构 <img src="/images/分布式-chapter2/image-20210601160857255.png" alt="image-20210601160857255" style="zoom:50%;" /></li>
+</ol>
+<blockquote>
+<p>CMP（或同时多线程）</p>
+<p>暗示了是共享内存硬件</p>
+</blockquote>
+<ol start="2">
+<li><p>UMA（统一内存访问）共享内存</p>
+<img src="/images/分布式-chapter2/image-20210601161056947.png" alt="image-20210601161056947" style="zoom:50%;" />
+
+<blockquote>
+<p>互连网络：总线、多级、交叉等</p>
+<p>暗示了是共享内存硬</p>
+</blockquote>
+</li>
+<li><p>NUMA（非统一内存访问）共享内存</p>
+<img src="/images/分布式-chapter2/image-20210601161417338.png" alt="image-20210601161417338" style="zoom:50%;" />
+
+<blockquote>
+<p>互联网络：交叉、网格、超立方体等</p>
+<p>分布式共享内存</p>
+</blockquote>
+</li>
+<li><p>分布式系统&#x2F;内存</p>
+<img src="/images/分布式-chapter2/image-20210601161935648.png" alt="image-20210601161935648" style="zoom:50%;" />
+
+<blockquote>
+<p>也称为集群、网络</p>
+<p>不要将其与分布式共享内存混淆</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="共享内存系统和分布式内存系统"><a href="#共享内存系统和分布式内存系统" class="headerlink" title="共享内存系统和分布式内存系统"></a>共享内存系统和分布式内存系统</h3><h4 id="共享内存系统"><a href="#共享内存系统" class="headerlink" title="共享内存系统"></a>共享内存系统</h4><img src="/images/分布式-chapter2/image-20210601162609422.png" alt="image-20210601162609422" style="zoom:50%;" />
+
+<ol>
+<li>通过互连网络连接到内存系统，将一系列自动处理器连接起来</li>
+<li>处理器可以直接访问系统中的所有数据</li>
+<li>处理器通常通过访问共享数据结构来进行隐式通信</li>
+<li>多核处理器在单个芯片上有多个CPU或内核</li>
+<li>在具有多个多核的共享内存系统中，互连可以将所有处理器直接连接到主内存（UMA），或者每个处理器可以直接连接到主内存块，处理器可以通过内置处理器的特殊硬件访问主存中的其他块（NUMA）</li>
+<li>UMA（统一内存访问）<img src="/images/分布式-chapter2/image-20210601163512344.png" alt="image-20210601163512344" style="zoom:50%;" />
+访问所有内存位置的时间对于所有内核都是一样的</li>
+<li>NUMA（非统一内存访问）<img src="/images/分布式-chapter2/image-20210601163612602.png" alt="image-20210601163612602" style="zoom:50%;" />
+与必须通过其他芯片访问的内存位置相比，可以更快的访问内核位置</li>
+</ol>
+<h4 id="分布式内存系统"><a href="#分布式内存系统" class="headerlink" title="分布式内存系统"></a>分布式内存系统</h4><img src="/images/分布式-chapter2/image-20210601163804342.png" alt="image-20210601163804342" style="zoom:50%;" />
+
+<ol>
+<li>每个处理器都有自己的私人内存</li>
+<li>处理器通过显式的消息传递或特殊功能共享数据</li>
+</ol>
+<h3 id="互连网络"><a href="#互连网络" class="headerlink" title="互连网络"></a>互连网络</h3><img src="/images/分布式-chapter2/image-20210601164013106.png" alt="image-20210601164013106" style="zoom:50%;" />
+
+<p>影响分布式和共享内存系统的性能</p>
+<p>两类：</p>
+<ol>
+<li>共享内存互连</li>
+<li>分布式内存互连</li>
+</ol>
+<h4 id="共享内存互连"><a href="#共享内存互连" class="headerlink" title="共享内存互连"></a>共享内存互连</h4><ol>
+<li><p>总线互连</p>
+<blockquote>
+<p>一组并行通信线以及一些控制总线访问的硬件<br>通信线由连接到它的设备共享<br>低成本和灵活性<br>随着连接到总线的设备的数量的增加，对总线使用的争夺也增加，性能下降</p>
+</blockquote>
+</li>
+<li><p>交换互连</p>
+<blockquote>
+<p>使用交换机控制连接设备中的数据路由<br>交叉：</p>
+<ol>
+<li>允许不同设备之间同时通信</li>
+<li>比总线快</li>
+<li>交换机和连接的成本相对较高</li>
+</ol>
+<img src="/images/分布式-chapter2/image-20210602083404492.png" alt="image-20210602083404492" style="zoom:50%;" />
+
+<p>（a）连接4个处理器（pi）和4个内存模块（mj）的交叉开关</p>
+<p>（b）交叉结点的内部开关配置</p>
+<p>（c）处理器同时访问内存</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="分布式内存互连"><a href="#分布式内存互连" class="headerlink" title="分布式内存互连"></a>分布式内存互连</h4><img src="/images/分布式-chapter2/image-20210602084600918.png" alt="image-20210602084600918" style="zoom:50%;" />
+
+<ol>
+<li><p>直接互联（静态网络）</p>
+<blockquote>
+<p>每个开关都直接连接到处理器-内存对并且开关相互连接<br>它由处理节点之间的点对点通信链接组成</p>
+</blockquote>
+</li>
+<li><p>间接互连（动态网络）</p>
+<blockquote>
+<p>交换机可能无法直接连接到处理器<br>它使用交换机和通信链接构建</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="度量的指标"><a href="#度量的指标" class="headerlink" title="度量的指标"></a>度量的指标</h4><ol>
+<li><p>对分宽度</p>
+<blockquote>
+<p>衡量“同时通信次数”或“连接性”的度量<br>对分宽度给出了“同时通信次数”的“最坏情况估计”<br>计算对分宽度的另一种方法是删除链接将节点分成两个相等的两半所需的最小链接数，删除的链接数就是对分宽度</p>
+</blockquote>
+</li>
+<li><p>带宽</p>
+<blockquote>
+<p>链接传输数据的速度</p>
+</blockquote>
+</li>
+<li><p>对分带宽</p>
+<blockquote>
+<p>衡量网络质量的指标<br>不是计算一半网络的链接数量，而是将它们的带宽相加</p>
+</blockquote>
+</li>
+<li><p>延迟</p>
+<blockquote>
+<p>源开始发送数据到目的节点接收到第一个bit之间的时间间隔</p>
+</blockquote>
+</li>
+<li><p>信息传送时间</p>
+<blockquote>
+<img src="/images/分布式-chapter2/image-20210602094928104.png" alt="image-20210602094928104" style="zoom:50%;" /></blockquote>
+</li>
+</ol>
+<h4 id="完全连接的网络"><a href="#完全连接的网络" class="headerlink" title="完全连接的网络"></a>完全连接的网络</h4><p>每个交换机都直接连接到其他交换机<br>这是一个“理论上最好的互连”，但不切合实际</p>
+<h4 id="线性网络"><a href="#线性网络" class="headerlink" title="线性网络"></a>线性网络</h4><ol>
+<li><p>线性排列</p>
+<blockquote>
+<p>将交换机排列成一维网格<br>对应于二维网格的行和列</p>
+</blockquote>
+</li>
+<li><p>环</p>
+<blockquote>
+<p>允许在末端开关之间进行环绕的变种<br>本质上支持双向流水线</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="多维网格网络"><a href="#多维网格网络" class="headerlink" title="多维网格网络"></a>多维网格网络</h4><ol>
+<li><p>网格</p>
+<blockquote>
+<p>将线性阵列泛化为2D或3D<br>仅允许相邻交换机之间的通信</p>
+</blockquote>
+</li>
+<li><p>环</p>
+<blockquote>
+<p>变种，包括网格边缘交换机之间的环绕连接（网状环绕）</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="超立方体"><a href="#超立方体" class="headerlink" title="超立方体"></a>超立方体</h4><ol>
+<li><p>超立方体是一个多维网格，每个维度上正好有两个处理器</p>
+</li>
+<li><p>d维度的超立方体具有p&#x3D;2^d^ 节点</p>
+</li>
+<li><p>构建</p>
+<blockquote>
+<p>一维超立方体是一个具有两个处理器的完全连接系统<br>二维超立方体由两个一维超立方体加入“相应”的开关构建<br>三维超立方体由二维超立方体构建<br>d维超立方体由d-1维超立方体构建<br>每个处理器都与其他处理器连接</p>
+<img src="/images/分布式-chapter2/image-20210602092152907.png" alt="image-20210602092152907" style="zoom:50%;" />
+<img src="/images/分布式-chapter2/image-20210602092756924.png" alt="image-20210602092756924" style="zoom:50%;" />
+</blockquote>
+</li>
+<li><p>超立方体的编号方案</p>
+<blockquote>
+<p>如果有p&#x2F;2节点的子立方体的编号，则通过用“0”或“1”加在其中一个子立方体编号中来获得p节点编号方案<br>这种方案可以通过不同位数的个数来判断两个节点是否是相邻的（有两位及以上就是分开的）</p>
+</blockquote>
+</li>
+</ol>
+<h4 id="间接互连"><a href="#间接互连" class="headerlink" title="间接互连"></a>间接互连</h4><p>eg：crossbar、fat tree</p>
+<p>通常显示单向链接和处理器集合，每个处理器都有一个传出和传入的链接，以及一个交换网络</p>
+<img src="/images/分布式-chapter2/image-20210602093354289.png" alt="image-20210602093354289" style="zoom:50%;" />
+
+<p>分布式内存的交叉互连</p>
+<img src="/images/分布式-chapter2/image-20210602093501481.png" alt="image-20210602093501481" style="zoom:50%;" />
+
+<h4 id="蝴蝶网络"><a href="#蝴蝶网络" class="headerlink" title="蝴蝶网络"></a>蝴蝶网络</h4><p>间接拓扑</p>
+<p>n&#x3D;2^d^ 处理器连接的节点由nlog(n+1)交换机节点连接</p>
+<img src="/images/分布式-chapter2/image-20210602093709062.png" alt="image-20210602093709062" style="zoom:50%;" />
+
+<p>路由：</p>
+<img src="/images/分布式-chapter2/image-20210602093812713.png" alt="image-20210602093812713" style="zoom:50%;" />
+
+<h4 id="树状网络"><a href="#树状网络" class="headerlink" title="树状网络"></a>树状网络</h4><p>树状网络是任意两个节点之间只有一条路径的网络<br>静态树状网络在树的每个节点都有一个处理元件<br>动态树状网络中中间节点是交换节点，叶子节点是处理节点</p>
+<img src="/images/分布式-chapter2/image-20210602094215823.png" alt="image-20210602094215823" style="zoom:50%;" />
+
+<p>路由时树的高级别上存在通信瓶颈，解决方法Fat Tree Network</p>
+<img src="/images/分布式-chapter2/image-20210602094646542.png" alt="image-20210602094646542" style="zoom:50%;" />
+
+<h3 id="内存层次和缓存一致性"><a href="#内存层次和缓存一致性" class="headerlink" title="内存层次和缓存一致性"></a>内存层次和缓存一致性</h3><h4 id="内存层次"><a href="#内存层次" class="headerlink" title="内存层次"></a>内存层次</h4><img src="/images/分布式-chapter2/image-20210602095050371.png" alt="image-20210602095050371" style="zoom:50%;" />
+
+<p>内存延迟</p>
+<img src="/images/分布式-chapter2/image-20210602095128619.png" alt="image-20210602095128619" style="zoom:50%;" />
+
+<h4 id="缓存一致性-1"><a href="#缓存一致性-1" class="headerlink" title="缓存一致性"></a>缓存一致性</h4><ol>
+<li>共享内存的一个重要问题</li>
+<li>处理器可能会缓存相同的位置</li>
+<li>如果一个处理器写该位置，所以其他处理器都最终必须看到这个写入</li>
+</ol>
+<p>为了解决这个问题，有如下解决方案：</p>
+<h5 id="无效或更新"><a href="#无效或更新" class="headerlink" title="无效或更新"></a>无效或更新</h5><img src="/images/分布式-chapter2/image-20210602100428695.png" alt="image-20210602100428695" style="zoom:50%;" />
+
+<p>write-through（写直达）：当数据写入缓存的时候也写入主存</p>
+<p>write-back：数据不会立即写入，缓存中数据标记为脏，当缓存行被内存中新的缓存行替代时，标记为脏的数据会被写入内存</p>
+<p>比较：</p>
+<ol>
+<li>写无效：当处理器写数据给其本地缓存时，其他缓存的副本必须无效。<br>如果写直达，它也更新了内存中的副本。<br>如果写回，则会使内存中的副本失效。<br>当一个生产者生产数据，多个消费者消费数据时不利</li>
+<li>写更新：当处理器写数据给其本地缓存时，必须立即更新其他缓存的副本。<br>如果写直达，它也更新了内存中的副本。<br>如果写回，数据不会立即写入。缓存中更新的数据标记为脏，当缓存行被内存中的新缓存行替换时，脏数据会写入内存。<br>当一个CPU读取数据之前一个CPU多次进行写操作或缓存被不再读取的数据填满时不利</li>
+</ol>
+<h5 id="MSI协议"><a href="#MSI协议" class="headerlink" title="MSI协议"></a>MSI协议</h5><p>现代的机器默认使用写无效协议，状态：shared、invalid、modified</p>
+<ol>
+<li><p>shared：数据项的多个有效副本（写需要变成modified，并且产生invalid）</p>
+</li>
+<li><p>modified：仅存在一个副本（写不改变状态）</p>
+</li>
+<li><p>invalid：数据副本无效的（读产生数据请求并且更新状态为shared）</p>
+</li>
+<li><p>注：这组状态转换不是独一无二的，也有MESI（E表示exclusive（独占的））</p>
+</li>
+<li><p>简单的MSI一致性协议状态转换图（实线表示处理器操作、虚线表示一致性操作（总线监听动作））</p>
+<img src="/images/分布式-chapter2/image-20210602210912932.png" alt="image-20210602210912932" style="zoom:50%;" /></li>
+</ol>
+<p>监听cache一致性：</p>
+<ol>
+<li>核心共享一个总线（不是必须的，但支持广播）</li>
+<li>总线上传输的任何信号都可以被连接到总线上的所有核心“看到”</li>
+<li>当核心0更新存储在其缓存中的x副本时，它也会在总线上广播该信息。</li>
+<li>如果核心1正在“监听”总线，它将看到x已经被更新，它可以将x的副本标记为无效。</li>
+</ol>
+<p>如何将无效发送给正确的处理器：</p>
+<ol>
+<li>广播所有无效和读请求</li>
+<li>监听cache监听并且在本地做出适当的一致性操作</li>
+</ol>
+<img src="/images/分布式-chapter2/image-20210603082338745.png" alt="image-20210603082338745" style="zoom:50%;" />
+
+<p>监听cache的操作：</p>
+<ol>
+<li>一旦数据被标记为dirty（modified），那么所有的后续操作都可以在本地的缓存中执行，无需外部传输</li>
+<li>如果一个数据项被多个处理器读取，在所有缓存中转换到共享状态，所有随后的读操作都变为本地操作</li>
+<li>但是，如果多个处理器读取和更新相同的数据，就会出现一个基本的瓶颈问题，在总线上生成一致性请求，总线受带宽限制，每秒更新次数受到限制</li>
+<li>如果是写直达Cache，不需要额外的互联网络，因为每个核都能检测写；如果是写回Cache，需要额外的通信，因为对Cache的更新不会立即发送给内存。</li>
+</ol>
+<p>一致性花费：</p>
+<ol>
+<li>监听Cache：每个一致性的操作都要被发送给所有的处理器。</li>
+<li>为什么不将一致性请求只发送给那些需要被通知的处理器呢?（于是产生了基于目录的Cache一致性监听协议）</li>
+</ol>
+<h5 id="基于目录的cache一致性协议"><a href="#基于目录的cache一致性协议" class="headerlink" title="基于目录的cache一致性协议"></a>基于目录的cache一致性协议</h5><p>基于目录：共享状态保存在目录中</p>
+<p>存在位：表示缓存块和缓存它们的处理器的位图</p>
+<img src="/images/分布式-chapter2/image-20210603091059608.png" alt="image-20210603091059608" style="zoom:50%;" />
+
+<p>示例：</p>
+<p>x&#x3D;1；</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>P0</th>
+<th>P1</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Time 0</td>
+<td>load x</td>
+<td>load x</td>
+</tr>
+<tr>
+<td>Time 1</td>
+<td>write #3</td>
+<td></td>
+</tr>
+</tbody></table>
+<ol>
+<li><p>当处理器P0和P1访问变量x 对应的块时，会发生什么</p>
+<blockquote>
+<p>当处理器 P0 和 P1 访问与变量 x 相对应的块时，块的状态更改为共享，并更新了存在位以指示处理器 P0 和 P1 共享块。</p>
+</blockquote>
+</li>
+<li><p>当P0写入变量时，会发生什么？</p>
+<blockquote>
+<p>当 P0 在变量上执行存储时，目录中的状态更改为脏，P1 的存在位被重置。在处理器 P0 上执行的此变量的所有后续操作都可以在本地进行。</p>
+</blockquote>
+</li>
+<li><p>如果另一个处理器读取该值，将会发生什么？</p>
+<blockquote>
+<p>如果其他处理器读取了该值，目录会注意到脏标签，并使用存在位将请求直接指向相应的处理器。处理器 P0 更新内存中的块，并将其发送到请求处理器。存在位将进行修改以反映此情况，状态更新为共享。</p>
+</blockquote>
+</li>
+</ol>
+<p>性能：</p>
+<ol>
+<li>开销 : 状态更新的传播 ( 通信开销 )  ; 从目录生成状态信息 ( 争用 ) </li>
+<li>如果一个并行程序需要大量的一致性操作(大量的读写共享数据块)，目录最终会限制它的并行性能</li>
+<li>存储目录的位可能会增加很大的开销-考虑扩展到许多处理器</li>
+<li>目录成为一个争论点—分布式目录方案是必要的</li>
+</ol>
+<p>分布式目录：</p>
+<ol>
+<li>分布式目录方案的性能：比监听系统或集中式目录系统更具可扩展性</li>
+<li>允许O（p）处理器同时进行一致性运算</li>
+<li>底层网络必须承载所有一致性请求</li>
+<li>网络的延迟和带宽成为根本的性能瓶颈</li>
+</ol>
+<img src="/images/分布式-chapter2/image-20210603091944379.png" alt="image-20210603091944379" style="zoom:50%;" />
+
+<h5 id="伪共享"><a href="#伪共享" class="headerlink" title="伪共享"></a>伪共享</h5><p>伪共享指的是不同处理器更新同一缓存线的不同部分的情况。</p>
+<p>CPU缓存在缓存行而不是单个变量上运行。</p>
+<p>串行版本：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> i,j,m,n;</span><br><span class="line"><span class="type">double</span> y[m];</span><br><span class="line"><span class="comment">/*Assign y=0*/</span></span><br><span class="line">...</span><br><span class="line"><span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;m;i++)&#123;</span><br><span class="line">    <span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;n;j++)&#123;</span><br><span class="line">        y[i]=f(i,j)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>并行版本：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*private varibles*/</span></span><br><span class="line"><span class="type">int</span> i,j,iter_count;</span><br><span class="line"><span class="comment">/*shared varibles initialzed by one core*/</span></span><br><span class="line"><span class="type">int</span> m,n,core_count;</span><br><span class="line"><span class="type">double</span> y[m];</span><br><span class="line">iter_count=m/core_count;</span><br><span class="line"><span class="comment">/*Core 0 does this*/</span></span><br><span class="line"><span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;iter_count;i++)&#123;</span><br><span class="line">    <span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;n;j++)&#123;</span><br><span class="line">        y[i]=f(i,j);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*Core 1 does this*/</span></span><br><span class="line"><span class="keyword">for</span>(i=iter_count;i&lt;<span class="number">2</span>*iter_count;i++)&#123;</span><br><span class="line">    <span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;n;j++)&#123;</span><br><span class="line">        y[i]=f(i,j);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>假设：共享内存系统有2个核，m &#x3D; 8，y [0]存储在高速缓存行的开头，并且高速缓存行可以存储8个双精度数，而y占用一个完整的高速缓存行。</p>
+<p>问：当核心0和核心1同时执行其代码时会发生什么？</p>
+<p>答：因为y的所有值都存储在单个高速缓冲行中，所有每次一个核执行语句y[i]&#x3D;f(i,j),高速缓存行就会失效，当另一个核尝试执行该语句的时候由于自己的状态为invalid，就必须从内存中将更新过的高速缓存行取出。尽管核0和核1不会访问对方的元素，但大量的赋值操作会访问主存，这就是伪共享。</p>
+<p> 总结：</p>
+<ol>
+<li>伪的共享不会导致错误的结果。</li>
+<li>他能引起过多不必要的访存，降低程序的性能。</li>
+</ol>
+<h2 id="软件并行"><a href="#软件并行" class="headerlink" title="软件并行"></a>软件并行</h2><h3 id="SPMD——单程序多数据"><a href="#SPMD——单程序多数据" class="headerlink" title="SPMD——单程序多数据"></a>SPMD——单程序多数据</h3><p>SPMD 程序由单个可执行程序组成，通过使用有条件分支，可以表现得像是多个不同的程序。</p>
+<img src="/images/分布式-chapter2/image-20210603093352586.png" alt="image-20210603093352586" style="zoom:50%;" />
+
+<p>SPMD可以实现数据并行</p>
+<img src="/images/分布式-chapter2/image-20210603093716369.png" alt="image-20210603093716369" style="zoom:50%;" />
+
+<h3 id="编写并行程序"><a href="#编写并行程序" class="headerlink" title="编写并行程序"></a>编写并行程序</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">double</span> x[n], y[n];</span><br><span class="line">…</span><br><span class="line"><span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">     x[i] += y[i];</span><br></pre></td></tr></table></figure>
+
+<p>假如有p个进程，可以让进程0负责0,……，n&#x2F;p-1的相加，进程1负责n&#x2F;p….2n&#x2F;p-1的相加，以此类推。</p>
+<ol>
+<li><p>将工作划分为多个进程&#x2F;线程</p>
+<blockquote>
+<p>每个进程&#x2F;线程获得的工作量大致相同</p>
+<p>通信被最小化</p>
+</blockquote>
+</li>
+<li><p>安排进程&#x2F;线程同步</p>
+</li>
+<li><p>安排进程&#x2F;线程通信</p>
+</li>
+</ol>
+<h3 id="共享内存"><a href="#共享内存" class="headerlink" title="共享内存"></a>共享内存</h3><ol>
+<li><p>动态线程</p>
+<blockquote>
+<p>主线程等待工作，派生新线程，并在线程完成后终止。</p>
+<p>有效利用资源，但是创建和终止线程非常耗时。</p>
+</blockquote>
+</li>
+<li><p>静态线程</p>
+<blockquote>
+<p>创建并分配工作的线程池，但是直到清理后才终止。</p>
+<p>更好的性能，但可能浪费系统资源。</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="不确定性"><a href="#不确定性" class="headerlink" title="不确定性"></a>不确定性</h3><p>如果给定的输入可以导致不同的输出，则计算是不确定的，例如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">……</span><br><span class="line"><span class="built_in">printf</span>（“线程％d&gt; my_val =％d \ n”， my_rank，my_x）;</span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+
+<p>假设线程1中的值为19，线程0的值为7，最后的输出有两种情况：</p>
+<blockquote>
+<p>情况1：<br>线程1&gt; my_val &#x3D; 19<br>线程0&gt; my_val &#x3D; 7</p>
+<p>情况2：<br>线程0&gt; my_val &#x3D; 7<br>线程1&gt; my_val &#x3D; 19</p>
+</blockquote>
+<p>然后执行以下代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">my_val = Compute_val（my_rank）;</span><br><span class="line">x + = my_val;</span><br></pre></td></tr></table></figure>
+
+<p>假设x为共享内存中的值初始化为0，那么调用之后我们所期望的结果为19+7+0&#x3D;28。<br>但是我们如果按照下述顺序进行执行：</p>
+<table>
+<thead>
+<tr>
+<th>time</th>
+<th>core 0</th>
+<th>core 1</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>完成对my_value的赋值</td>
+<td>调用compute_val</td>
+</tr>
+<tr>
+<td>1</td>
+<td>把x&#x3D;0加载到寄存器</td>
+<td>完成对my_value的赋值</td>
+</tr>
+<tr>
+<td>2</td>
+<td>把my_value&#x3D;7加载到寄存器</td>
+<td>把x&#x3D;0加载到寄存器</td>
+</tr>
+<tr>
+<td>3</td>
+<td>my_value与x相加</td>
+<td>把my_value&#x3D;19加载到寄存器</td>
+</tr>
+<tr>
+<td>4</td>
+<td>存储x&#x3D;7</td>
+<td>my_vlaue与x相加</td>
+</tr>
+<tr>
+<td>5</td>
+<td>开始其他工作</td>
+<td>存储x&#x3D;19</td>
+</tr>
+</tbody></table>
+<p>按照如此顺序，x最后的值为19，不同的执行顺序，可能导致不同的结果</p>
+<p>解决方案：</p>
+<ul>
+<li>竞争条件</li>
+<li>临界区</li>
+<li>互斥</li>
+<li>互斥锁定</li>
+</ul>
+<p>我们可以更改上面的代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">my_val = Compute_val（my_rank）;</span><br><span class="line">Lock（＆add_my_val_lock）;</span><br><span class="line">x + = my_val;</span><br><span class="line">Unlock（＆add_my_val_lock）;</span><br></pre></td></tr></table></figure>
+
+<p>使用互斥量增加了串行性，可以有代替互斥量的方法：</p>
+<p>在忙等待时：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ok_for_1=<span class="literal">false</span>;</span><br><span class="line">my_val = Compute_val ( my_rank ) ;</span><br><span class="line"><span class="keyword">if</span> ( my_rank == <span class="number">1</span>)</span><br><span class="line">     <span class="keyword">while</span> ( ! ok_for_1 ) ;  <span class="comment">/* Busy−wait loop */</span></span><br><span class="line">x += my_val ;  <span class="comment">/* Critical section */</span></span><br><span class="line"><span class="keyword">if</span> ( my_rank == <span class="number">0</span>)</span><br><span class="line">     ok_for_1 = <span class="literal">true</span> ;  <span class="comment">/* Let thread 1 update x */</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="分布式内存"><a href="#分布式内存" class="headerlink" title="分布式内存"></a>分布式内存</h3><p>消息传递的方式：API至少提供一个发送函数和一个接受函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> message [ <span class="number">1</span> <span class="number">0</span> <span class="number">0</span> ] ;</span><br><span class="line">. . .</span><br><span class="line">my_rank = Get_rank ( ) ;</span><br><span class="line"><span class="keyword">if</span> ( my_rank == <span class="number">1</span>) &#123;</span><br><span class="line">     <span class="built_in">sprintf</span> ( message , <span class="string">&quot;Greetings from process 1&quot;</span> ) ;</span><br><span class="line">     Send ( message , MSG_CHAR , <span class="number">100</span> , <span class="number">0</span> ) ;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> ( my_rank == <span class="number">0</span>) &#123;</span><br><span class="line">     Receive ( message , MSG_CHAR , <span class="number">100</span> , <span class="number">1</span> ) ;</span><br><span class="line">     <span class="built_in">printf</span> ( <span class="string">&quot;Process 0 &gt; Received: %s\n&quot;</span> , message ) ;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>程序段为SPMD，变量消息引用不同进程上的不同内存块。</p>
+<ul>
+<li><p>单向通信</p>
+<ul>
+<li>在单向通信或远程内存访问中，单个进程将调用一个函数。</li>
+<li>这样可以简化沟通。 它可以大大降低通信成本。</li>
+<li>这些优点中的某些优点在实践中可能难以实现。</li>
+</ul>
+</li>
+<li><p>划分全局地址空间的语言</p>
+<ul>
+<li><p>允许用户使用某些共享内存技术对分布式内存硬件进行编程。</p>
+</li>
+<li><p>考虑下面的共享内存向量加法的伪代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">shared <span class="type">int</span> n = . . . ;</span><br><span class="line">shared <span class="type">double</span> x [ n ] , y [ n ] ;</span><br><span class="line">private <span class="type">int</span> i , my_first_element , my_last_element ;</span><br><span class="line">my_first_element = . . . ;</span><br><span class="line">my_last_element = . . . ;</span><br><span class="line">/ * Initialize x and y  */</span><br><span class="line">. . .</span><br><span class="line"><span class="keyword">for</span> ( i = my_first_element ; i &lt;= my_last_element ; i++)</span><br><span class="line">     x [ i ] += y [ i ] ;</span><br></pre></td></tr></table></figure>
+
+<p>首先定义两个共享数组，x和y。如果分配的核同时拥有x和y的元素，那么执行速度是很快的，但是如果核分配的全为x或者y，那么程序的性能非常糟糕，因为每次都要访问自己远端的内存。</p>
+</li>
+<li><p>私有变量被分配到执行进程的核心的局部内存中，<strong>共享数据结构</strong>中的数据分布由程序员控制。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="输入和输出"><a href="#输入和输出" class="headerlink" title="输入和输出"></a>输入和输出</h2><p>当我们的并行程序需要执行I &#x2F; O时，请进行以下假设并遵循以下规则：</p>
+<ul>
+<li>在分布式内存程序中，只有进程0会访问stdin。在共享内存程序中，只有主线程或线程0将访问stdin。</li>
+<li>在分布式内存和共享内存程序中，所有进程&#x2F;线程都可以访问stdout和stderr。</li>
+<li>但是，由于输出到stdout的顺序不确定，在大多数情况下，除了调试输出之外，所有输出到stdout的只有一个进程&#x2F;线程。</li>
+<li>调试输出应该始终包括生成输出的进程&#x2F;线程的级别或id。</li>
+<li>只有单个进程&#x2F;线程将尝试访问除stdin、stdout或stderr之外的任何单个文件。例如，每个进程&#x2F;线程可以打开自己的私有文件进行读写，但没有两个进程&#x2F;线程会打开相同的文件。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BE%E7%A8%8B/" rel="tag"># 课程</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA/" rel="tag"># 计算机</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag"># 分布式</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/27/%E5%88%86%E5%B8%83%E5%BC%8F-chapter1/" rel="prev" title="分布式-chapter1">
+      <i class="fa fa-chevron-left"></i> 分布式-chapter1
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/03/%E5%88%86%E5%B8%83%E5%BC%8F-chapter3-Parallel-Algorithm-Design/" rel="next" title="分布式-chapter3-Parallel Algorithm Design">
+      分布式-chapter3-Parallel Algorithm Design <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%AF%E8%AF%BA%E4%BE%9D%E6%9B%BC%E6%A8%A1%E5%9E%8B%E6%94%B9%E8%BF%9B"><span class="nav-number">1.</span> <span class="nav-text">冯诺依曼模型改进</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%AF%E8%AF%BA%E4%BE%9D%E6%9B%BC%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">冯诺依曼模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E4%B8%AA%E6%94%B9%E8%BF%9B"><span class="nav-number">1.2.</span> <span class="nav-text">三个改进</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%93%E5%AD%98"><span class="nav-number">1.3.</span> <span class="nav-text">缓存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86"><span class="nav-number">1.3.1.</span> <span class="nav-text">基本知识</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%93%AA%E4%BA%9B%E6%95%B0%E6%8D%AE%E6%88%96%E6%8C%87%E4%BB%A4%E5%AD%98%E5%82%A8%E5%9C%A8cache%E4%B8%AD"><span class="nav-number">1.3.2.</span> <span class="nav-text">哪些数据或指令存储在cache中</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E6%80%A7%E5%8E%9F%E7%90%86"><span class="nav-number">1.3.3.</span> <span class="nav-text">局部性原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">1.3.4.</span> <span class="nav-text">缓存一致性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E6%98%A0%E5%B0%84"><span class="nav-number">1.3.5.</span> <span class="nav-text">缓存映射</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9cache%E5%91%BD%E4%B8%AD%E7%8E%87%E7%9A%84%E9%97%B4%E6%8E%A5%E6%8E%A7%E5%88%B6"><span class="nav-number">1.3.6.</span> <span class="nav-text">对cache命中率的间接控制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98"><span class="nav-number">1.4.</span> <span class="nav-text">虚拟内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E4%BB%A4%E7%BA%A7%E5%B9%B6%E8%A1%8C"><span class="nav-number">1.5.</span> <span class="nav-text">指令级并行</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-number">1.5.1.</span> <span class="nav-text">流水线</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E4%BA%8B%E5%8A%A1"><span class="nav-number">1.5.2.</span> <span class="nav-text">多事务</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%B9%B6%E8%A1%8C"><span class="nav-number">2.</span> <span class="nav-text">硬件并行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Flynn%E7%9A%84%E5%88%86%E7%B1%BB%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">Flynn的分类法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#SISD"><span class="nav-number">2.1.1.</span> <span class="nav-text">SISD</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MISD"><span class="nav-number">2.1.2.</span> <span class="nav-text">MISD</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SIMD"><span class="nav-number">2.1.3.</span> <span class="nav-text">SIMD</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%9F%A2%E9%87%8F%E5%A4%84%E7%90%86%E5%99%A8"><span class="nav-number">2.1.3.1.</span> <span class="nav-text">矢量处理器</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MIMD"><span class="nav-number">2.1.4.</span> <span class="nav-text">MIMD</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#MIMD%E7%9A%84%E7%89%A9%E7%90%86%E7%BB%84%E7%BB%87"><span class="nav-number">2.1.4.1.</span> <span class="nav-text">MIMD的物理组织</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98%E7%B3%BB%E7%BB%9F%E5%92%8C%E5%88%86%E5%B8%83%E5%BC%8F%E5%86%85%E5%AD%98%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.2.</span> <span class="nav-text">共享内存系统和分布式内存系统</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.2.1.</span> <span class="nav-text">共享内存系统</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E5%86%85%E5%AD%98%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.2.2.</span> <span class="nav-text">分布式内存系统</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%92%E8%BF%9E%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.</span> <span class="nav-text">互连网络</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98%E4%BA%92%E8%BF%9E"><span class="nav-number">2.3.1.</span> <span class="nav-text">共享内存互连</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E5%86%85%E5%AD%98%E4%BA%92%E8%BF%9E"><span class="nav-number">2.3.2.</span> <span class="nav-text">分布式内存互连</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BA%A6%E9%87%8F%E7%9A%84%E6%8C%87%E6%A0%87"><span class="nav-number">2.3.3.</span> <span class="nav-text">度量的指标</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E7%9A%84%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.4.</span> <span class="nav-text">完全连接的网络</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BA%BF%E6%80%A7%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.5.</span> <span class="nav-text">线性网络</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E7%BB%B4%E7%BD%91%E6%A0%BC%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.6.</span> <span class="nav-text">多维网格网络</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B6%85%E7%AB%8B%E6%96%B9%E4%BD%93"><span class="nav-number">2.3.7.</span> <span class="nav-text">超立方体</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%97%B4%E6%8E%A5%E4%BA%92%E8%BF%9E"><span class="nav-number">2.3.8.</span> <span class="nav-text">间接互连</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%9D%B4%E8%9D%B6%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.9.</span> <span class="nav-text">蝴蝶网络</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%91%E7%8A%B6%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.10.</span> <span class="nav-text">树状网络</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%82%E6%AC%A1%E5%92%8C%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">2.4.</span> <span class="nav-text">内存层次和缓存一致性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%82%E6%AC%A1"><span class="nav-number">2.4.1.</span> <span class="nav-text">内存层次</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7-1"><span class="nav-number">2.4.2.</span> <span class="nav-text">缓存一致性</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%97%A0%E6%95%88%E6%88%96%E6%9B%B4%E6%96%B0"><span class="nav-number">2.4.2.1.</span> <span class="nav-text">无效或更新</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#MSI%E5%8D%8F%E8%AE%AE"><span class="nav-number">2.4.2.2.</span> <span class="nav-text">MSI协议</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E7%9B%AE%E5%BD%95%E7%9A%84cache%E4%B8%80%E8%87%B4%E6%80%A7%E5%8D%8F%E8%AE%AE"><span class="nav-number">2.4.2.3.</span> <span class="nav-text">基于目录的cache一致性协议</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BC%AA%E5%85%B1%E4%BA%AB"><span class="nav-number">2.4.2.4.</span> <span class="nav-text">伪共享</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E5%B9%B6%E8%A1%8C"><span class="nav-number">3.</span> <span class="nav-text">软件并行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SPMD%E2%80%94%E2%80%94%E5%8D%95%E7%A8%8B%E5%BA%8F%E5%A4%9A%E6%95%B0%E6%8D%AE"><span class="nav-number">3.1.</span> <span class="nav-text">SPMD——单程序多数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E5%B9%B6%E8%A1%8C%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.2.</span> <span class="nav-text">编写并行程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98"><span class="nav-number">3.3.</span> <span class="nav-text">共享内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E7%A1%AE%E5%AE%9A%E6%80%A7"><span class="nav-number">3.4.</span> <span class="nav-text">不确定性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E5%86%85%E5%AD%98"><span class="nav-number">3.5.</span> <span class="nav-text">分布式内存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E5%92%8C%E8%BE%93%E5%87%BA"><span class="nav-number">4.</span> <span class="nav-text">输入和输出</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">汪道之</p>
+  <div class="site-description" itemprop="description">有的人身着布衣，却心有锦缎。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">汪道之</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
