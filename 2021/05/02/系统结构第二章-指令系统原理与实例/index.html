@@ -17,24 +17,24 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"wsw8.online","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+    var CONFIG = {"hostname":"zhmjsnl.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
   <meta name="description" content="1. 指令集系统结构的分类根本区别：处理器内部数据的存储结构不同 存储结构：  堆栈：操作数隐含的位于栈顶 累加器：一个隐含操作数就是累加器 通用寄存器：明确地指定操作数，不是寄存器就是存储器地址 register-memory系统结构：一般指令都可以访存 register-register&#x2F;load-store系统结构：只有load、store指令能访存">
 <meta property="og:type" content="article">
 <meta property="og:title" content="系统结构第二章_指令系统原理与实例">
-<meta property="og:url" content="https://wsw8.online/2021/05/02/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/index.html">
+<meta property="og:url" content="https://zhmjsnl.github.io/2021/05/02/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/index.html">
 <meta property="og:site_name" content="汪道之">
 <meta property="og:description" content="1. 指令集系统结构的分类根本区别：处理器内部数据的存储结构不同 存储结构：  堆栈：操作数隐含的位于栈顶 累加器：一个隐含操作数就是累加器 通用寄存器：明确地指定操作数，不是寄存器就是存储器地址 register-memory系统结构：一般指令都可以访存 register-register&#x2F;load-store系统结构：只有load、store指令能访存">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502145943075.png">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502150225975.png">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502151144878.png">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502152010830.png">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503153254772.png">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503153545936.png">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503154351355.png">
-<meta property="og:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503154602183.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502145943075.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502150225975.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502151144878.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502152010830.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503153254772.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503153545936.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503154351355.png">
+<meta property="og:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210503154602183.png">
 <meta property="article:published_time" content="2021-05-02T06:52:30.000Z">
 <meta property="article:modified_time" content="2021-05-10T08:30:51.891Z">
 <meta property="article:author" content="汪道之">
@@ -42,9 +42,9 @@
 <meta property="article:tag" content="计算机">
 <meta property="article:tag" content="系统结构">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://wsw8.online/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502145943075.png">
+<meta name="twitter:image" content="https://zhmjsnl.github.io/images/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/image-20210502145943075.png">
 
-<link rel="canonical" href="https://wsw8.online/2021/05/02/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/">
+<link rel="canonical" href="https://zhmjsnl.github.io/2021/05/02/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/">
 
 
 <script id="page-configurations">
@@ -178,7 +178,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wsw8.online/2021/05/02/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/">
+    <link itemprop="mainEntityOfPage" href="https://zhmjsnl.github.io/2021/05/02/%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E6%8C%87%E4%BB%A4%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E4%BE%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
